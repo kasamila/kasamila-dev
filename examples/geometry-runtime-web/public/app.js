@@ -12,8 +12,23 @@ const tokenResponse = await fetch('/api/runtime-token', {
 });
 const bootstrap = await tokenResponse.json();
 if (!tokenResponse.ok) throw new Error(bootstrap.error || 'Runtime Token creation failed');
-const { loadKasamila } = await import(new URL('/sdk/bootstrap/1/loader.mjs', bootstrap.apiBase).href);
-const Kasamila = await loadKasamila(bootstrap.sdk, bootstrap.apiBase);
+let player = null;
+const endLease = () => fetch(new URL('/api/v1/runtime/sessions/end', bootstrap.apiBase), {
+  method: 'POST', mode: 'cors', keepalive: true,
+  headers: { Authorization: 'Bearer ' + bootstrap.sessionToken },
+}).catch(() => {});
+window.addEventListener('pagehide', () => {
+  if (player) void player.destroy();
+  else void endLease();
+}, { once: true });
+let Kasamila;
+try {
+  const { loadKasamila } = await import(new URL('/sdk/bootstrap/1/loader.mjs', bootstrap.apiBase).href);
+  Kasamila = await loadKasamila(bootstrap.sdk, bootstrap.apiBase);
+} catch (error) {
+  await endLease();
+  throw error;
+}
 const component = document.createElement('kasamila-avatar');
 component.style.width = '100%';
 component.style.height = '100%';
@@ -28,7 +43,10 @@ if (bootstrap.mediaDelivery === 'hls') {
   createOptions.templateMedia = bootstrap.templateMedia;
 }
 
-const player = await Kasamila.create(createOptions);
+player = await Kasamila.create(createOptions).catch(async error => {
+  await component.destroy().catch(() => {});
+  throw error;
+});
 const mouth = player.getMouthConfiguration();
 if (!(mouth.parameters?.teeth_scale > 0)) {
   await player.destroy();
@@ -69,4 +87,3 @@ document.querySelector('#profiles').addEventListener('click', async event => {
   }
 });
 
-window.addEventListener('pagehide', () => player.destroy(), { once: true });
