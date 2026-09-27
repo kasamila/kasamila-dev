@@ -2,7 +2,7 @@
 
 # Geometry models: API / Web SDK integration
 
-> SDK 2.0.0 release candidate: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Wait for the production rollout notice before upgrading.
+> SDK 2.0.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
 
 
 For Kasamila API v1 and Web SDK **2.0.0**. Geometry training is the supported template-processing mode. It computes face tracking, per-frame MediaPipe 468-point geometry, V7 oral assets, materials and calibration; it does not train person-specific neural-network weights.

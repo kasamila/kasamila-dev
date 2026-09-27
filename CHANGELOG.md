@@ -1,12 +1,12 @@
 # Public developer resources
 
-## SDK 2.0.0 release candidate · 2026-09-27
+## SDK 2.0.0 released · 2026-09-27
 
 - Breaking one-time client migration; SDK 1 is not supported by the new workflow.
 - Immutable full packages, session-selected releases, pinned/stable/preview policies and capability negotiation.
 - Session-pinned geometry generations/calibration, SRI bootstrap and bundled HLS/teeth assets.
 - Bilingual migration documentation and updated runnable examples; Worker unchanged.
-- Candidate documentation only: production deployment and customer playback remain rollout gates.
+- Production deployment verified: 209 API/migration tests and 84 browser unit tests passed; cross-Origin Bootstrap/SRI and resource digests verified. Customer audio/device acceptance remains an integration rollout gate.
 
 
 ## 2026-09-27 · Bilingual guides and unified Developer Center

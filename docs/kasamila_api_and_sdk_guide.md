@@ -2,7 +2,7 @@
 
 # Kasamila API / Web SDK 2.0.0 开发者手册
 
-> SDK 2.0.0 发布候选：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。收到生产上线通知后再切换。
+> SDK 2.0.0 已上线：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。现在可以按清单迁移。
 
 
 本文是第三方接入 Kasamila 的当前入口。生产系统自 `1.11.0` 起只接受和运行

@@ -4,7 +4,7 @@
 
 [kasamila/kasamila-dev](https://github.com/kasamila/kasamila-dev) is the public home for API/SDK documentation, upgrade notes, examples and platform integrations. System core remains private.
 
-Current browser examples target Web SDK **1.11.6**.
+Current browser examples target Web SDK **2.0.0**.
 
 ## Available now
 

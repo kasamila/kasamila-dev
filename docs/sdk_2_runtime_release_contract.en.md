@@ -2,8 +2,7 @@ English | [简体中文](sdk_2_runtime_release_contract.md)
 
 # SDK 2.0.0: one migration, independently versioned Runtime releases
 
-Status: release candidate; production deployment has not yet been confirmed.
-Wait for the server rollout notice before switching production clients.
+Status: SDK 2.0.0 deployed on 2026-09-27; production entry, CORS, caching and resource digests verified. Third parties can now migrate.
 This is a breaking migration. SDK 1, mutable entry points and fine-tuned templates have no compatibility layer.
 Routes remain under /api/v1. The protocol is kasamila-runtime-v1 and the geometry contract is
 kasamila-geometry-track-v2. V7, default profile C and explicit candidate I remain unchanged.
@@ -82,7 +81,7 @@ After regenerating a template, new sessions need the matching media generation; 
 ## 3. Session snapshots and lifecycle
 
 Creation freezes the SDK descriptor, artifact UUIDs/generation, dimensions, fps and mouth defaults.
-Manifest reads that snapshot rather than new channel settings, calibration or retraining output.
+Manifest returns protocol and artifact_generation and reads that snapshot rather than new channel settings, calibration or retraining output.
 Keep old SDK packages and retain template artifacts until dependent sessions end/expire.
 Archival, deletion, Key revocation and access withdrawal may still revoke access.
 SDK 1 sessions return runtime_session_migration_required; create new sessions after migration.

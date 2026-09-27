@@ -2,7 +2,7 @@
 
 # SDK 2.0.0：一次迁移、独立升级的 Runtime 接入规范
 
-状态：发布候选，尚未确认生产部署。第三方应等待服务端上线通知后切换。
+状态：SDK 2.0.0 已于 2026-09-27 上线，生产入口、CORS、缓存和资源摘要已验证。第三方可按清单迁移。
 本次是一次破坏性迁移，不提供 SDK 1、旧入口或微调模式兼容层。
 API 路径仍为 /api/v1，Runtime 协议为 kasamila-runtime-v1。
 几何契约为 kasamila-geometry-track-v2；V7 口腔链、默认 C 和显式候选 I 不变。
@@ -83,7 +83,7 @@ HLS 解码器已在包内，无需外部 hlsScriptUrl。
 ## 3. 会话快照与生命周期
 
 创建时固化 SDK 描述符、模板产物 UUID/代号、尺寸、fps 和口型默认值。
-Manifest 返回该快照，不随稳定通道推进、模板重新生成或校准更新切换资源。
+Manifest 返回 protocol 和 artifact_generation 及该快照，不随稳定通道推进、模板重新生成或校准更新切换资源。
 旧发行包必须保留；旧模板产物在依赖会话结束/到期前不得删除。
 归档、删除、Key 吊销及权限撤回不是兼容性承诺，仍可停止资源访问。
 SDK 1 的已有会话返回 runtime_session_migration_required；客户须建立新会话。

@@ -2,7 +2,7 @@
 
 # Kasamila Runtime API, Web SDK and MCP/Agent integration
 
-> SDK 2.0.0 release candidate: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Wait for the production rollout notice before upgrading.
+> SDK 2.0.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
 
 
 Applies to Kasamila API v1 and Web SDK **2.0.0**. Geometry templates are the supported production mode. Audio2Viseme inference and WebGL rendering run in the end user's browser.

@@ -2,7 +2,7 @@
 
 # Kasamila API / Web SDK 2.0.0 developer handbook
 
-> SDK 2.0.0 release candidate: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Wait for the production rollout notice before upgrading.
+> SDK 2.0.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
 
 
 This is the main entry point for integrators. Geometry is the supported template build/runtime mode. Person-specific MouthUNet fine-tuning and V7+v29 hybrid rendering are retired and must not be used for new integrations.

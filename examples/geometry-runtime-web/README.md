@@ -71,4 +71,4 @@ Origin。生产环境必须给 `/api/runtime-token` 增加自己的登录校验�
 完整字段、错误码、透明媒体和上线检查见
 [`docs/api_v1_geometry_runtime_guide.md`](../../docs/api_v1_geometry_runtime_guide.md)。
 
-SDK 2.0.0 发布候选。后端配置 KASAMILA_SDK_VERSION=2.0.0、KASAMILA_UPDATE_POLICY=pinned，透传 sdk 描述符，网页使用不可变 bootstrap。HLS 已内置，不需要外部解码器。请遵循[版本契约](../../docs/sdk_2_runtime_release_contract.md)，收到生产上线通知后再切换。
+SDK 2.0.0 已上线。后端配置 KASAMILA_SDK_VERSION=2.0.0、KASAMILA_UPDATE_POLICY=pinned，透传 sdk 描述符，网页使用不可变 bootstrap。HLS 已内置，不需要外部解码器。请遵循[版本契约](../../docs/sdk_2_runtime_release_contract.md)，现在可以按清单迁移。

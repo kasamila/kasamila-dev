@@ -77,4 +77,4 @@ Uploading/playing audio may need a user gesture. Creating this ordinary Runtime 
 The demo server binds to loopback. Deploying it publicly without business authentication would let visitors consume your Key's billable quota.
 Full errors, transparent-media requirements and acceptance tests are in the [geometry guide](../../docs/api_v1_geometry_runtime_guide.en.md).
 
-SDK 2.0.0 release candidate. Configure backend KASAMILA_SDK_VERSION=2.0.0 and KASAMILA_UPDATE_POLICY=pinned. The backend forwards sdk, and the browser loads the immutable bootstrap. HLS is bundled; no external HLS decoder is required. Follow the [release contract](../../docs/sdk_2_runtime_release_contract.en.md). Wait for the production rollout notice before cutover.
+SDK 2.0.0 is deployed. Configure backend KASAMILA_SDK_VERSION=2.0.0 and KASAMILA_UPDATE_POLICY=pinned. The backend forwards sdk, and the browser loads the immutable bootstrap. HLS is bundled; no external HLS decoder is required. Follow the [release contract](../../docs/sdk_2_runtime_release_contract.en.md). Complete application acceptance before cutover.

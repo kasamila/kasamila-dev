@@ -12,6 +12,6 @@ Pinned production clients are not forced to switch merely because a new release 
 No Worker update or retraining is required for eligible geometry models.
 
 Before cutover test audio, teeth, profiles, transparency, HLS, expiry, billing settlement and Agent receipts.
-This is a release candidate; wait for confirmed server deployment before production migration.
+Production SDK 2.0.0 is verified; complete application acceptance before customer rollout.
 
 Examples: [browser demo](../examples/geometry-runtime-web/README.en.md).
