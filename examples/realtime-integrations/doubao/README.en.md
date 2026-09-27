@@ -27,4 +27,10 @@ Disable the official demo's local speaker output to avoid duplicate voices. The 
 
 **Boundary:** official credentials and binary session negotiation are delegated to the vendor demo, not included here. The mapping helper is covered by local bridge tests; paid provider E2E is pending.
 
+If the official decoder declares mono little-endian float32 output, call
+```python
+bridge.audio_float32(decoded_float32_bytes, sample_rate=24000)
+```
+instead of labeling those bytes PCM16. The explicit converter rejects NaN and malformed data. Use the actual decoder metadata; never guess the format from byte length.
+
 Protocol reference: [Official Doubao realtime voice documentation](https://www.volcengine.com/docs/6561/1594356). Checked 2026-09-27; account/model availability must be verified by you. Synthetic contract tests are not paid provider acceptance.

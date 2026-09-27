@@ -8,9 +8,9 @@
 
 `/api/start` 仍由自己的后端认证并返回传输参数；不要同时挂载 PipecatClientAudio，否则重复播放。框架原生抢话继续生效；卸载时移除监听、断开框架并销毁 Runtime。
 
-## 代码与详细步骤
+现有项目安装 `@pipecat-ai/client-js` 与所用 transport 包，再初始化 player。绑定要先于 startBotAndConnect，避免错过首个音轨；BotReady 和音轨更换都会重选 bot.audio。错误回调应结束 Runtime。
 
-Reuse an existing Pipecat bot endpoint and a matching WebRTC transport (Daily or SmallWebRTC). This package does not instantiate your STT/LLM/TTS pipeline. The Kasamila session must permit `rtc`.
+## 挂接代码
 
 ```js
 import {PipecatClient, RTVIEvent} from "@pipecat-ai/client-js";
@@ -29,6 +29,8 @@ await client.disconnect();
 await player.destroy();
 ```
 
-Your `/api/start` must authenticate the user and return the transport's expected connection parameters. The adapter reads `tracks().bot.audio`, never `local.audio`. Do not mount PipecatClientAudio or another speaker component. Bot-ready and track-replacement events reattach the correct track. Verify framework-native barge-in and remove listeners on unmount.
+## 验收
 
-协议来源：[Pipecat 官方资料](https://docs.pipecat.ai/api-reference/client/js/client-methods)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。协议测试不等于付费云端验收。
+请验证多轮对话、用户抢话、平台断开、Token 到期和关闭时 Runtime 释放。密钥仅存服务端；样例协议测试不等于真实付费平台验收。
+
+协议来源：[Pipecat 官方资料](https://docs.pipecat.ai/api-reference/client/js/client-methods)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。

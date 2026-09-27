@@ -8,12 +8,10 @@
 
 此版本没有自动 Gemini 会话恢复。平台会话断开/go-away 后销毁 Kasamila Runtime，再通过后端重新建立；不要把永久 Google Key 写入浏览器。
 
-## 代码与详细步骤
+`providers/gemini.mjs` 会忽略图片与文本 part，输出缺省采样率为平台文档规定的24kHz。`@google/genai` 在服务端运行，浏览器只接收本地中继的音频。
 
-Set `PROVIDER=gemini`, server-only `GEMINI_API_KEY` and **explicit** `GEMINI_LIVE_MODEL` from your account's model catalogue. Run the [local starter](../README.en.md). The relay uses `@google/genai`; input is 16 kHz mono PCM16, output typically 24 kHz with the actual rate parsed from MIME metadata.
+## 验收
 
-The adapter iterates every `serverContent.modelTurn.parts` entry; it does not read only the first part or confuse text/images with audio. `serverContent.interrupted` invalidates the previous reply. See [gemini.mjs](../providers/gemini.mjs).
+请验证多轮对话、用户抢话、平台断开、Token 到期和关闭时 Runtime 释放。密钥仅存服务端；样例协议测试不等于真实付费平台验收。
 
-If your Live session ends or emits go-away, end the Kasamila player and reacquire both sessions through your backend. Automatic Gemini session resumption is not implemented by this starter. Never use a permanent Google Key in a public browser.
-
-协议来源：[Google Gemini Live API 官方资料](https://ai.google.dev/gemini-api/docs/live-api/capabilities)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。协议测试不等于付费云端验收。
+协议来源：[Google Gemini Live API 官方资料](https://ai.google.dev/gemini-api/docs/live-api/capabilities)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。

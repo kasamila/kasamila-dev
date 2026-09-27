@@ -10,14 +10,10 @@
 
 边界：此处提供可运行的本地回调桥，不包含/冒充完整火山二进制握手实现，也未完成带凭据的端到端测试。
 
-## 代码与详细步骤
+具体操作：1）启动本地 bridge 模式；2）取得浏览器显示的 channel；3）将 BRIDGE_CHANNEL、BRIDGE_SECRET、BRIDGE_URL 配给官方 Demo 进程；4）在官方解包后的输出音频和 ASR 抢话回调中挂接以下函数；5）独立线程读取浏览器麦克风并送入官方原有输入函数。桥只发送给对应 channel，不广播到其他用户。
 
-Download and run the **official** end-to-end realtime voice demo linked by Volcengine's documentation. Keep its authentication, connection/session lifecycle and binary framing; this suite does not invent or duplicate those internals.
+## 挂接代码
 
-1. Configure that demo's TTS output to mono **pcm_s16le / 24000 Hz**. Default pcm/float32 output is NOT interchangeable.
-2. Set this starter's `PROVIDER=bridge` and a private random `BRIDGE_SECRET` of at least 24 characters. Run it locally, click Start and copy its channel into the official demo process's `BRIDGE_CHANNEL`.
-3. Supply the same `BRIDGE_SECRET` and `BRIDGE_URL=http://127.0.0.1:8790/api/bridge` to that process.
-4. Add [doubao-hook.py](../providers/doubao-hook.py) to your demo's module path:
 ```python
 # Rename doubao-hook.py to kasamila_bridge.py in your local demo integration.
 from kasamila_bridge import KasamilaBridge
@@ -31,8 +27,16 @@ bridge.microphone(lambda pcm, rate: official_send_audio(pcm))
 # official_send_audio is YOUR demo's existing audio-input function, not a new API.
 ```
 
-Disable the official demo's local speaker output to avoid duplicate voices. The HTTP hook routes a specific browser channel; it cannot broadcast one user's audio to all sessions. Run the official input-reader in a dedicated thread; do not block its output callback loop. For production, replace loopback with your authenticated per-user relay.
+## 验收
 
-**Boundary:** official credentials and binary session negotiation are delegated to the vendor demo, not included here. The mapping helper is covered by local bridge tests; paid provider E2E is pending.
+如果官方解包明确输出单声道小端 float32，可使用显式转换，不能直接标记为 PCM16：
 
-协议来源：[Doubao realtime voice 官方资料](https://www.volcengine.com/docs/6561/1594356)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。协议测试不等于付费云端验收。
+```python
+bridge.audio_float32(decoded_float32_bytes, sample_rate=24000)
+```
+
+必须根据解包元数据选择格式，不能按字节长度猜测；转换器会拒绝 NaN 和不完整数据。
+
+请验证多轮对话、用户抢话、平台断开、Token 到期和关闭时 Runtime 释放。密钥仅存服务端；样例协议测试不等于真实付费平台验收。
+
+协议来源：[Doubao realtime voice 官方资料](https://www.volcengine.com/docs/6561/1594356)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。

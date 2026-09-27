@@ -8,9 +8,9 @@
 
 下列英文代码展示完整挂接/断开步骤，可直接复制进现有浏览器工程。沿用 AgentSession、STT/LLM/TTS 和房间授权服务，不需要改 Agent 算法。不要另调用 `track.attach()` 或安装第二个声音播放器。取消订阅只停声音，离开房间还应 `player.destroy()`。
 
-## 代码与详细步骤
+在现有项目中安装 `livekit-client`，先初始化 SDK 2.1.0 的 player，再注册 room 的监听，最后连接房间。已经订阅的音轨也会补挂接；重连后核对 Agent 身份。错误回调应销毁 Runtime，而不只是打印日志。
 
-Use your existing LiveKit Agents room and backend-issued **room Token**. It is separate from the Kasamila Runtime Token. Allow `rtc` when creating the Kasamila session. The exact `agentIdentity` must match the agent participant; never choose the first human audio track.
+## 挂接代码
 
 ```js
 import {Room, RoomEvent} from "livekit-client";
@@ -29,6 +29,8 @@ await room.disconnect();
 await player.destroy();
 ```
 
-Keep your existing AgentSession / STT / LLM / TTS graph and room-token service. The adapter supports both tracks already subscribed and later subscriptions. Do not call `track.attach()` or mount another room audio renderer: Kasamila owns audio playout. Track unsubscribe stops audio, but your app must destroy the session on disconnect. Rebind after reconnect and verify participant identity.
+## 验收
 
-协议来源：[LiveKit Agents 官方资料](https://docs.livekit.io/transport/media/subscribe/)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。协议测试不等于付费云端验收。
+请验证多轮对话、用户抢话、平台断开、Token 到期和关闭时 Runtime 释放。密钥仅存服务端；样例协议测试不等于真实付费平台验收。
+
+协议来源：[LiveKit Agents 官方资料](https://docs.livekit.io/transport/media/subscribe/)。核对日期：2026-09-27；实际模型/账号权限需开发者确认。

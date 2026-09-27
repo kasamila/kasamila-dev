@@ -21,6 +21,7 @@ jobs:
       - run: node --check examples/realtime-integrations/server.mjs
       - run: node --check examples/realtime-integrations/public/app.mjs
       - run: python -m py_compile examples/realtime-integrations/providers/doubao-hook.py
+      - run: python -m unittest discover -s examples/realtime-integrations/tests -p "*_test.py"
       - run: node scripts/check_docs.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: examples/geometry-runtime-web
