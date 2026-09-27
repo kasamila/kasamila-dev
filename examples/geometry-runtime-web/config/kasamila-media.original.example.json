@@ -1,0 +1,12 @@
+{
+  "delivery": "hls",
+  "url": "https://media.example.com/avatars/999000000001/001/original/index.m3u8",
+  "timelineId": "REPLACE_WITH_MEDIA_CONTRACT_TIMELINE_ID",
+  "frameCount": 9000,
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "layout": "original",
+  "segmentDuration": 2,
+  "canonicalVideoSha256": "REPLACE_WITH_64_CHARACTER_PREVIEW_VIDEO_SHA256"
+}

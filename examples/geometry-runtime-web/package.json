@@ -1,0 +1,9 @@
+{
+  "name": "kasamila-geometry-runtime-example",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": { "hls.js": "1.7.3" }
+}

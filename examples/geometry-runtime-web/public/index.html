@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kasamila Geometry Runtime</title>
+  <style>
+    body{margin:0;background:#10131a;color:#edf2f7;font:14px system-ui;display:grid;place-items:center;min-height:100vh}
+    main{width:min(960px,96vw);display:grid;grid-template-columns:minmax(280px,540px) 1fr;gap:20px}
+    #avatar{aspect-ratio:9/16;background:#000;border-radius:12px;overflow:hidden}
+    section{display:flex;flex-direction:column;gap:12px}.row{display:flex;gap:8px;flex-wrap:wrap}
+    button,input{font:inherit;padding:9px 12px}button{cursor:pointer}pre{white-space:pre-wrap;word-break:break-word}
+    @media(max-width:760px){main{grid-template-columns:1fr}#avatar{max-height:72vh}}
+  </style>
+  <script src="https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6" crossorigin="anonymous"></script>
+</head>
+<body>
+  <main>
+    <div id="avatar"></div>
+    <section>
+      <h1>几何模型 Runtime</h1>
+      <input id="audio" type="file" accept="audio/*">
+      <div class="row">
+        <button id="play">播放本地声音</button>
+        <button id="stop">停止声音</button>
+      </div>
+      <div class="row" id="profiles">
+        <button data-profile="C">C（默认）</button>
+        <button data-profile="G">G</button>
+        <button data-profile="H">H</button>
+        <button data-profile="I">I（候选）</button>
+      </div>
+      <pre id="status">初始化中…</pre>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
