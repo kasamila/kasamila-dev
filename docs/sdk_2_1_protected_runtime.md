@@ -1,3 +1,5 @@
+[English](sdk_2_1_protected_runtime.en.md) | 简体中文
+
 # SDK 2.1 加密包接入与发布
 
 版本：SDK 2.1.0。正式包已用独立密钥封装；实际生产部署状态以 /api/v1/system/version、

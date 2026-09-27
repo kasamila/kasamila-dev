@@ -1,7 +1,7 @@
 # Kasamila 音频桥接底座
 
 这是无供应商依赖的接入底座，不是 Gemini / OpenAI / LiveKit / Pipecat 的完整适配器。
-验证对象为 Web SDK 1.11.6 的 setPcmStream、setMediaStreamTrack、stop、destroy 契约。
+验证对象为 Web SDK 2.1.0 的 setPcmStream、setMediaStreamTrack、stop、destroy 契约。
 
 [查看桥接代码](https://github.com/kasamila/kasamila-dev/blob/main/examples/audio-bridge/bridge.mjs)。源代码、说明和测试在此公开仓库一起维护。
 

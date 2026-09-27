@@ -1,6 +1,6 @@
-> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
-
 English | [简体中文](sdk_1_11_0_third_party_migration.md)
+
+> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
 
 # Third-party migration: SDK 2.1.0
 

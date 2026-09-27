@@ -1,6 +1,6 @@
-> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
-
 [English](api_v1_geometry_runtime_guide.en.md) | [简体中文](api_v1_geometry_runtime_guide.md)
+
+> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
 
 # Kasamila 几何模型 API / Web SDK 第三方接入指南
 

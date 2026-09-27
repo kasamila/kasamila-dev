@@ -19,7 +19,7 @@ for (const filename of files) {
   for (const match of body.matchAll(/\]\(([^)\s]+)\)/g)) {
     if (/^(https?:|#)/.test(match[1])) continue;
     const target = path.resolve(path.dirname(filename), match[1].split("#")[0]);
-    assert.ok(target.startsWith(root + path.sep), "Link outside public repository");
+    assert.ok(target.startsWith(root + path.sep), filename + ": link outside public repository " + match[1]);
     assert.ok(fs.existsSync(target), filename + ": broken link " + match[1]);
   }
   if (path.dirname(filename) === path.join(root, "docs") && !filename.endsWith(".en.md")) {
@@ -29,7 +29,7 @@ for (const filename of files) {
   if (filename.endsWith(".en.md") && path.dirname(filename) === path.join(root, "docs")) {
     const prose = body.replace(/^.*?\n\n/s, ""); // Exclude bilingual navigation.
     assert.ok(!/[\u3400-\u9fff]/.test(prose), "Untranslated Chinese in English guide: " + filename);
-    assert.ok(/(?:1\.11\.6|2\.0\.0)/.test(prose), "Missing documented SDK version");
+    assert.ok(/(?:1\.11\.6|2\.\d+\.\d+)/.test(prose), "Missing documented SDK version");
   }
   assert.ok(!/(?:192\.168\.\d+\.\d+|ks_(?:live|test|rt)_[A-Za-z0-9_-]{24,}|\x2d{5}BEGIN .*PRIVATE KEY)/.test(body),
     "Potential sensitive content: " + filename);

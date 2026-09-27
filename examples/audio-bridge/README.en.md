@@ -1,7 +1,7 @@
 # Kasamila PCM / RTC audio bridge
 
 This is a provider-neutral integration foundation, **not** a complete Gemini, OpenAI, LiveKit or Pipecat adapter.
-Its contract tests target Web SDK 1.11.6 `setPcmStream`, `setMediaStreamTrack`, `stop` and `destroy`.
+Its contract tests target Web SDK 2.1.0 `setPcmStream`, `setMediaStreamTrack`, `stop` and `destroy`.
 
 [Bridge source](https://github.com/kasamila/kasamila-dev/blob/main/examples/audio-bridge/bridge.mjs) · [Runtime guide](https://github.com/kasamila/kasamila-dev/blob/main/docs/api_v1_runtime_integration_guide.en.md)
 

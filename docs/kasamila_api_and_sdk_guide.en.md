@@ -1,6 +1,6 @@
-> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
-
 [English](kasamila_api_and_sdk_guide.en.md) | [简体中文](kasamila_api_and_sdk_guide.md)
+
+> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
 
 # Kasamila API / Web SDK 2.1.0 developer handbook
 

@@ -1,6 +1,6 @@
-> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
-
 [English](kasamila_api_and_sdk_guide.en.md) | [简体中文](kasamila_api_and_sdk_guide.md)
+
+> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
 
 # Kasamila API / Web SDK 2.1.0 开发者手册
 

@@ -1,6 +1,6 @@
-# SDK 2.1 protected package
+English | [简体中文](sdk_2_1_protected_runtime.md)
 
-[中文](sdk_2_1_protected_runtime.md)
+# SDK 2.1 protected package
 
 Version: SDK 2.1.0, sealed with an independent production secret.
 Check /api/v1/system/version and /api/v1/runtime/releases for actual deployment/health.
