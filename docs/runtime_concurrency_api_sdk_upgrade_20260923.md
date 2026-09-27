@@ -1,3 +1,5 @@
+[English](runtime_concurrency_api_sdk_upgrade_20260923.en.md) | [简体中文](runtime_concurrency_api_sdk_upgrade_20260923.md)
+
 # Runtime 并发配额：API/SDK 更新与第三方升级指南
 
 适用范围：Kasamila API package `0.11.0` 的 Runtime Session、MCP/Agent Session、Portal 测试会话。Web SDK 仍为 `1.11.6`，本次**不改变** HLS `templateMedia`、音频接口、口型参数或浏览器初始化方式；这是服务端席位分配与计费扩展。

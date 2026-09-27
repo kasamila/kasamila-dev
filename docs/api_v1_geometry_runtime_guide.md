@@ -1,3 +1,5 @@
+[English](api_v1_geometry_runtime_guide.en.md) | [简体中文](api_v1_geometry_runtime_guide.md)
+
 # Kasamila 几何模型 API / Web SDK 第三方接入指南
 
 本文是几何模型模板的正式第三方接入说明，适用于 Kasamila API v1 和 Web SDK

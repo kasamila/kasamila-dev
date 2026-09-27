@@ -14,6 +14,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: node --test examples/audio-bridge/bridge.test.mjs
+      - run: node scripts/check_docs.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: examples/geometry-runtime-web
       - run: node --check examples/geometry-runtime-web/server.mjs

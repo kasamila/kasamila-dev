@@ -1,5 +1,15 @@
 # Public developer resources
 
+## 2026-09-27 · Bilingual guides and unified Developer Center
+
+- English editions of all seven developer guides and both example READMEs.
+- Default English repository home with a Chinese home and per-guide language links.
+- Portal documentation and version navigation merged into a public GitHub Developer Center.
+- Existing site guide/Markdown URLs remain compatible; English guide routes serve English bodies.
+- Portal Chinese information-page and six-column avatar-grid fixes use a separate core CI/CD deployment.
+
+Documentation/site changes only: **Web SDK stays 1.11.6; Runtime API contracts and Worker code are unchanged**.
+
 ## 2026-09-27 · Initial documentation and examples
 
 - API/SDK, geometry/HLS, concurrency and third-party upgrade guides.
@@ -10,4 +20,4 @@
 
 This is a documentation/example publication, **not a new SDK binary or API release**.
 Provider-specific Gemini/GPT/LiveKit/Pipecat adapters are not yet delivered.
-Use the site's release notes to confirm the version deployed to production.
+Release-specific notes should identify the actual production commit and verification state; this documentation publication is not a new SDK binary.

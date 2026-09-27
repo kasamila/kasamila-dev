@@ -1,3 +1,5 @@
+[English](integration-examples.en.md) | [简体中文](integration-examples.md)
+
 # Kasamila 集成样例
 
 这是公开的样例导航。登录前后使用同一份文档、博客和版本公告；Workspace 管理个人模板、Key、额度与使用记录。

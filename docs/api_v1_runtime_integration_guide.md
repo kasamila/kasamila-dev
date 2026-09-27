@@ -1,3 +1,5 @@
+[English](api_v1_runtime_integration_guide.en.md) | [简体中文](api_v1_runtime_integration_guide.md)
+
 # Kasamila 推理 API、Web SDK 与 MCP/Agent 集成指南
 
 本文面向实际接入 Kasamila 数字人的前端、后端和 Agent 开发者。生产架构始终分成两个安全域：商户后端持有永久 API Key，浏览器只持有短期 Runtime Token。音频、Audio2Viseme 推理和 WebGL 渲染默认在最终用户浏览器完成。

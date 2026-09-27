@@ -1,3 +1,5 @@
+[English](geometry-runtime-web-example.en.md) | [简体中文](geometry-runtime-web-example.md)
+
 # Kasamila Web SDK 1.11.6 几何模型第三方接入样例
 
 站内源文件：[服务端 server.mjs](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/server.mjs) · [浏览器 app.js](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/public/app.js) · [页面 index.html](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/public/index.html) · [原背景描述符](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/config/kasamila-media.original.example.json) · [透明背景描述符](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/config/kasamila-media.transparent.example.json)。

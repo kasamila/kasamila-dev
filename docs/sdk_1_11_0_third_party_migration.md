@@ -1,3 +1,5 @@
+[English](sdk_1_11_0_third_party_migration.en.md) | [简体中文](sdk_1_11_0_third_party_migration.md)
+
 # Kasamila Web SDK 1.11.6 第三方升级指南
 
 本文用于已有第三方系统从旧 SDK/旧模板流程升级到 Kasamila Web SDK `1.11.6`。
@@ -7,9 +9,9 @@ Runtime 并发席位的后续 API 扩展不需要升级 Web SDK；接入方升�
 
 `1.11.6` 是兼容性修订：保持 Runtime API、`templateMedia` 和口腔校准字段不变。Agent 手动音频命令模式须显式调用 `ackAgentCommand()`；默认自动播放模式不变。
 V7 会为开口原片沿实时 468 点内唇曲线重建闭合接触层，并随声音开度连续淡出；
-其颜色来自几何模型的稳定双唇材质，不再读取当前视频帧的唇边像素，因而不会把牙齿、
-高光或编码噪声表现成游荡的乳白像素。IDLE、静音和闭合音也不会出现双排亮片或整块
-肉色补片，声音驱动张口后的程序化上下牙仍正常显示。规则对所有 geometry 模板一致，
+其颜色来自几何模型的稳定双唇材质，旨在减少当前视频帧牙齿、
+高光或编码噪声导致的乳白像素、双排亮片和肉色补片；个别模板仍需按实际效果验收，不保证消除所有伪影。
+声音驱动张口后的程序化上下牙仍由完整链生成。规则对所有 geometry 模板一致，
 I 仍是显式候选。第三方仍必须使用 HLS；Portal 自有签名 MP4 预览的启动缓冲属于
 内部诊断通道，不改变对外媒体契约。
 
@@ -99,7 +101,7 @@ export async function createAvatarRuntime(req, res) {
       body: JSON.stringify({
         avatar_id: avatarId,
         template_code: templateCode,
-        origin: 'https://ailive.avatarworld.cn',
+        origin: 'https://app.example.com',
         input_modes: ['file', 'audio_url', 'pcm_stream', 'tts_stream'],
         output_mode: outputMode,
         max_duration_seconds: 600
@@ -261,17 +263,17 @@ img-src 'self' https://www.kasamila.com data: blob:;
 不要只捕获错误然后继续展示半初始化 Canvas；这会造成有脸、无牙齿、口型错位或
 计量状态不一致。
 
-## 8. AILIVE 上线验收清单
+## 8. Integrator 上线验收清单
 
 - [ ] 浏览器实际加载的 SDK 为 `1.11.6`。
 - [ ] 只消费 Catalog 中 ready 的 geometry 模板。
-- [ ] 永久 API Key 只存在 AILIVE 后端。
+- [ ] 永久 API Key 只存在 Integrator 后端。
 - [ ] 每次 Session 的 Origin、输入模式、输出模式和时长均按业务签发。
 - [ ] 原背景和透明背景分别选择正确的 HLS 描述符。
 - [ ] SDK 初始化不直接加载任何内部 renderer/模型/纹理文件。
 - [ ] C 为默认驱动；I 只在明确测试页面启用。
 - [ ] 上牙、下牙、内唇、遮挡均存在，`teeth_scale > 0`。
-- [ ] 文件音频和 AILIVE 实际 TTS/PCM 均可驱动口型。
+- [ ] 文件音频和 Integrator 实际 TTS/PCM 均可驱动口型。
 - [ ] 短模板和 5 分钟以上模板完成首播、跨段、seek、loop、断网恢复测试。
 - [ ] Chrome/Edge、Safari、iOS 和 Android 至少各完成一次真机测试。
 - [ ] SPA 切换、页面隐藏和退出均正确调用 `stop()`/`destroy()`。
