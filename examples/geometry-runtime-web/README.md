@@ -1,4 +1,4 @@
-# Kasamila Web SDK 2.0.0 几何模型第三方接入样例
+# Kasamila Web SDK 2.1.0 几何模型第三方接入样例
 
 站内源文件：[服务端 server.mjs](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/server.mjs) · [浏览器 app.js](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/public/app.js) · [页面 index.html](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/public/index.html) · [原背景描述符](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/config/kasamila-media.original.example.json) · [透明背景描述符](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/config/kasamila-media.transparent.example.json)。
 
@@ -64,11 +64,13 @@ Origin。生产环境必须给 `/api/runtime-token` 增加自己的登录校验�
 - 正确设置 MIME：m3u8 为 `application/vnd.apple.mpegurl`，fMP4 为 `video/mp4`。
 - CSP 至少允许 `script-src https://www.kasamila.com`、`connect-src` 访问 Kasamila 与媒体域、`media-src` 访问媒体域，以及 `worker-src blob:`。
 - `img-src` 必须允许 `https://www.kasamila.com`，否则官方牙齿/口腔纹理会被拦截。
-- 初始化后确认 `Kasamila.version === '2.0.0'` 且 `player.getMouthConfiguration().parameters.teeth_scale > 0`。
+- 初始化后确认 `Kasamila.version === '2.1.0'` 且 `player.getMouthConfiguration().parameters.teeth_scale > 0`。
 - 不记录 API Key、Runtime Token 或签名资产 URL。
 - 页面卸载时调用 `destroy()`；切换声音源前调用 `stop()`。
 
 完整字段、错误码、透明媒体和上线检查见
 [`docs/api_v1_geometry_runtime_guide.md`](../../docs/api_v1_geometry_runtime_guide.md)。
 
-SDK 2.0.0 已上线。后端配置 KASAMILA_SDK_VERSION=2.0.0、KASAMILA_UPDATE_POLICY=pinned，透传 sdk 描述符，网页使用不可变 bootstrap。HLS 已内置，不需要外部解码器。请遵循[版本契约](../../docs/sdk_2_runtime_release_contract.md)，现在可以按清单迁移。
+SDK 2.1.0 已上线。后端配置 KASAMILA_SDK_VERSION=2.1.0、KASAMILA_UPDATE_POLICY=pinned，透传 sdk 描述符，网页使用不可变 bootstrap。HLS 已内置，不需要外部解码器。请遵循[版本契约](../../docs/sdk_2_runtime_release_contract.md)，现在可以按清单迁移。
+
+SDK 2.1 使用加密模型/着色器与自动临时授权，客户无需解密密钥。失败停止并释放会话，不要静默回退明文或旧版。参见 [2.1 接入说明](../../docs/sdk_2_1_protected_runtime.md)。

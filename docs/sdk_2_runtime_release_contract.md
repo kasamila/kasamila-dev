@@ -1,9 +1,12 @@
+> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
+
 [English](sdk_2_runtime_release_contract.en.md) | 简体中文
 
-# SDK 2.0.0：一次迁移、独立升级的 Runtime 接入规范
+# SDK 2.1.0：一次迁移、独立升级的 Runtime 接入规范
 
-状态：SDK 2.0.0 已于 2026-09-27 上线，生产入口、CORS、缓存和资源摘要已验证。第三方可按清单迁移。
-本次是一次破坏性迁移，不提供 SDK 1、旧入口或微调模式兼容层。
+发布版本：SDK 2.1.0，实际生产版本请通过 /api/v1/runtime/releases 核对。
+相对 SDK 1 是一次破坏性迁移，不提供 SDK 1、旧入口或微调模式兼容层；
+相对 SDK 2.0 保持调用接口兼容，并继续支持固定 2.0.0 会话。
 API 路径仍为 /api/v1，Runtime 协议为 kasamila-runtime-v1。
 几何契约为 kasamila-geometry-track-v2；V7 口腔链、默认 C 和显式候选 I 不变。
 不需要重新训练已有合格几何模型；Worker 不随本次升级。
@@ -22,7 +25,7 @@ API 路径仍为 /api/v1，Runtime 协议为 kasamila-runtime-v1。
   "output_mode": "original",
   "max_duration_seconds": 600,
   "client": {
-    "sdk_version": "2.0.0",
+    "sdk_version": "2.1.0",
     "protocol": "kasamila-runtime-v1",
     "geometry_contract": "kasamila-geometry-track-v2",
     "update_policy": "pinned",
@@ -46,7 +49,7 @@ package_sha256 和 entry_sha256。后端向网页返回 client_token 和原样 s
 
 GET /api/v1/runtime/releases 返回可用发行版和稳定通道；它不是强制升级指令。
 不支持的版本、协议或能力返回 409 runtime_contract_unsupported，不创建会话、不占计费租约。
-省略 client 时只使用 SDK 2.0.0 的默认固定契约；第三方仍应明确声明。
+省略 client 时只使用 SDK 2.1.0 的默认固定契约；第三方仍应明确声明。
 
 ## 2. 网页使用会话返回的完整包
 
@@ -69,7 +72,7 @@ GET /api/v1/runtime/releases 返回可用发行版和稳定通道；它不是强
 
 bootstrap 校验受信 API Origin、精确版本路径和入口 SRI。
 SDK 校验会话版本、协议及 release.json 摘要，然后加载包内依赖。
-整个包位于 /sdk/releases/2.0.0/，包含 renderer、hls.js、Audio2Viseme、
+整个包位于 /sdk/releases/2.1.0/，包含 renderer、hls.js、Audio2Viseme、
 ONNX/WASM、Worklet 和牙齿纹理，发布后不得覆盖。缓存一年且 immutable。
 不要混用 /web/js、/web/weights、/web/common 或单独复制入口 JS。
 HLS 解码器已在包内，无需外部 hlsScriptUrl。
@@ -96,14 +99,14 @@ Agent 创建会话的工具参数也接受相同 client；Agent 投递与回执�
 
 ## 4. AILIVE 等第三方一次迁移清单
 
-1. 后端增加 client，初次固定 2.0.0，并将返回的 sdk 透传网页。
+1. 后端增加 client，初次固定 2.1.0，并将返回的 sdk 透传网页。
 2. 删除 /web/sdk/kasamila.js?v=...、外部 renderer、旧覆盖层及 Service Worker 的旧 SDK 路径缓存。
 3. 按上方 bootstrap 创建播放器；不要预加载另一个版本的依赖。
 4. CSP 放行受信 Kasamila 的 script-src/connect-src、wasm-unsafe-eval（浏览器需要时）及 worker-src blob:；
    媒体 Origin 同时按业务需求放行 media-src/connect-src。不要为了运行 SDK 全面关闭 CSP。
 5. 保留自托管 HLS 的 CORS/Range、媒体签名续签，以及 timeline/digest 校验。
 6. 验证本地声音、PCM/RTC、牙齿、C/G/H/I、透明媒体、seek/loop、到期、销毁结算及 Agent 回执。
-7. 先内部灰度，确认新服务端已支持 2.0.0，再替换生产接入；失败时停止灰度，不能回退到不再支持的 SDK 1。
+7. 先内部灰度，确认新服务端已支持 2.1.0，再替换生产接入；失败时停止灰度，不能回退到不再支持的 SDK 1。
 
 此后新增功能采用能力协商与显式通道；有破坏性变化发布新协议/主版本，
 不覆盖原 SDK 文件。旧主版本支持期限与安全撤销须另行公告，不承诺无限期保留。

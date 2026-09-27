@@ -1,6 +1,8 @@
+> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
+
 English | [简体中文](sdk_1_11_0_third_party_migration.md)
 
-# Third-party migration: SDK 2.0.0
+# Third-party migration: SDK 2.1.0
 
 SDK 2 is a breaking, one-time migration. Do not use SDK 1 or the old /web/sdk entry.
 Follow the [complete Runtime release contract and migration checklist](sdk_2_runtime_release_contract.en.md).
@@ -12,6 +14,6 @@ Pinned production clients are not forced to switch merely because a new release 
 No Worker update or retraining is required for eligible geometry models.
 
 Before cutover test audio, teeth, profiles, transparency, HLS, expiry, billing settlement and Agent receipts.
-Production SDK 2.0.0 is verified; complete application acceptance before customer rollout.
+Production SDK 2.1.0 is verified; complete application acceptance before customer rollout.
 
 Examples: [browser demo](../examples/geometry-runtime-web/README.en.md).

@@ -1,9 +1,12 @@
+> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
+
 English | [简体中文](sdk_2_runtime_release_contract.md)
 
-# SDK 2.0.0: one migration, independently versioned Runtime releases
+# SDK 2.1.0: one migration, independently versioned Runtime releases
 
-Status: SDK 2.0.0 deployed on 2026-09-27; production entry, CORS, caching and resource digests verified. Third parties can now migrate.
-This is a breaking migration. SDK 1, mutable entry points and fine-tuned templates have no compatibility layer.
+Release: SDK 2.1.0. Verify actual production availability through /api/v1/runtime/releases.
+Migration from SDK 1 is breaking: SDK 1, mutable entry points and fine-tuned templates have no compatibility layer.
+The public SDK 2.0 interface remains compatible and pinned 2.0.0 sessions remain supported.
 Routes remain under /api/v1. The protocol is kasamila-runtime-v1 and the geometry contract is
 kasamila-geometry-track-v2. V7, default profile C and explicit candidate I remain unchanged.
 Existing eligible geometry models do not need retraining. This release does not update the Worker.
@@ -22,7 +25,7 @@ Call POST /api/v1/runtime/sessions using your Key:
   "output_mode": "original",
   "max_duration_seconds": 600,
   "client": {
-    "sdk_version": "2.0.0",
+    "sdk_version": "2.1.0",
     "protocol": "kasamila-runtime-v1",
     "geometry_contract": "kasamila-geometry-track-v2",
     "update_policy": "pinned",
@@ -44,7 +47,7 @@ Do not construct SDK URLs from a global "latest" version. sdk_version summarizes
 
 GET /api/v1/runtime/releases lists releases/channels; it is not a forced upgrade instruction.
 Unsupported versions/protocols/capabilities return 409 runtime_contract_unsupported before session creation or quota reservation.
-An omitted client uses the fixed SDK 2.0.0 baseline; integrations should still declare it explicitly.
+An omitted client uses the fixed SDK 2.1.0 baseline; integrations should still declare it explicitly.
 
 ## 2. Load the session-selected full package
 
@@ -67,7 +70,7 @@ An omitted client uses the fixed SDK 2.0.0 baseline; integrations should still d
 
 The bootstrap verifies trusted API Origin, exact version path and entry SRI.
 The SDK verifies the selected session version, protocol and release.json digest before loading dependencies.
-The complete immutable /sdk/releases/2.0.0/ tree includes the renderer, hls.js, Audio2Viseme,
+The complete immutable /sdk/releases/2.1.0/ tree includes the renderer, hls.js, Audio2Viseme,
 ONNX/WASM, Worklet and teeth texture. Published bytes must never be overwritten.
 Packages have one-year immutable caching. Do not mix mutable /web/js, /web/weights or /web/common resources.
 The HLS decoder is bundled; external hlsScriptUrl is unnecessary.
@@ -94,7 +97,7 @@ Without explicit termination, the lease can consume its full duration; client he
 
 ## 4. One-time AILIVE and third-party checklist
 
-1. Declare client with pinned 2.0.0 on your backend and return the sdk descriptor unchanged.
+1. Declare client with pinned 2.1.0 on your backend and return the sdk descriptor unchanged.
 2. Remove /web/sdk/kasamila.js?v=..., direct renderer scripts, old overlays and Service Worker caches for mutable SDK paths.
 3. Load through the bootstrap above. Do not preload another release's dependencies.
 4. Allow the trusted Kasamila Origin in script-src/connect-src, wasm-unsafe-eval where required,
@@ -102,7 +105,7 @@ Without explicit termination, the lease can consume its full duration; client he
    Do not disable CSP globally.
 5. Preserve self-hosted HLS CORS/Range, media signature refresh and timeline/digest validation.
 6. Test local audio, PCM/RTC, teeth, C/G/H/I, transparency, seek/loop, expiry, destruction settlement and Agent receipts.
-7. Canary internally after the server supports SDK 2.0.0. On failure stop the canary;
+7. Canary internally after the server supports SDK 2.1.0. On failure stop the canary;
    do not fall back to unsupported SDK 1.
 
 Future additions use capability negotiation and explicit channels.

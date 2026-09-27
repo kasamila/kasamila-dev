@@ -13,7 +13,7 @@ const avatarId = process.env.KASAMILA_AVATAR_ID || '';
 const templateCode = process.env.KASAMILA_TEMPLATE_CODE || '001';
 const outputMode = process.env.KASAMILA_OUTPUT_MODE || 'original';
 const descriptorPath = process.env.KASAMILA_MEDIA_DESCRIPTOR || '';
-const sdkVersion = process.env.KASAMILA_SDK_VERSION || '2.0.0';
+const sdkVersion = process.env.KASAMILA_SDK_VERSION || '2.1.0';
 const updatePolicy = process.env.KASAMILA_UPDATE_POLICY || 'pinned';
 
 const types = {
@@ -62,7 +62,7 @@ async function createRuntimeSession() {
         protocol: 'kasamila-runtime-v1',
         geometry_contract: 'kasamila-geometry-track-v2',
         update_policy: updatePolicy,
-        required_capabilities: ['geometry-v7', 'hls'],
+        required_capabilities: ['geometry-v7', 'hls', 'protected-runtime-v1', 'license-grant-v1'],
       },
     }),
   });

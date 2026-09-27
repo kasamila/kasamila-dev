@@ -15,8 +15,10 @@ The system core remains private. This repository contains no training Worker, ba
 - [Integration examples and roadmap](docs/integration-examples.en.md)
 - [Release notes](CHANGELOG.md)
 
-Every guide has an English/Chinese language switch. Guide filenames preserve earlier compatibility; the current documented Web SDK is **2.0.0**.
-SDK 2.0.0 is deployed. This is a breaking one-time migration; complete application acceptance before production cutover. Examples load the official SDK from Kasamila, not a copied rendering core.
+Every guide has an English/Chinese language switch. Guide filenames preserve earlier compatibility; the current documented Web SDK is **2.1.0**.
+SDK 2.1.0 adds encrypted resources and automatic temporary licensing; pinned 2.0.0 remains supported.
+Verify availability through the production release registry and complete application acceptance before cutover.
+Examples load the official SDK from Kasamila, not a copied rendering core.
 Example Avatar ID `999000000001` is fictional; replace it with a template accessible to your Key.
 
 ## Runnable examples
@@ -69,3 +71,5 @@ License: [Apache-2.0](LICENSE); external dependencies retain their own licenses.
 
 [Immutable Runtime release contract and upgrade checklist](docs/sdk_2_runtime_release_contract.en.md)
 Pinned is the default. New stable releases do not hot-swap active sessions or force pinned integrations to upgrade.
+
+- [SDK 2.1 encrypted Runtime / AILIVE upgrade](docs/sdk_2_1_protected_runtime.en.md)

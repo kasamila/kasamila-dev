@@ -16,7 +16,7 @@ Public documentation, API/SDK upgrade notes and integration examples for [Kasami
 - [PCM / RTC audio bridge](examples/audio-bridge/README.md)
 - [Changelog](CHANGELOG.md)
 
-Current examples target Web SDK **2.0.0**, loaded from the official Kasamila site.
+Current examples target Web SDK **2.1.0**, loaded from the official Kasamila site.
 本仓库发布 SDK 接入说明与升级样例，不复制 SDK 渲染核心或声称提供独立离线 SDK。
 示例中的 `999000000001` 为虚构编号，必须替换为账户可访问的数字人编号。
 
@@ -67,3 +67,5 @@ License: existing [Apache-2.0](LICENSE); external dependencies retain their own 
 
 [不可变 Runtime 版本契约与升级清单](docs/sdk_2_runtime_release_contract.md)
 默认 pinned。服务器新版本不会热替换活动会话或强迫固定版本客户升级。
+
+- [SDK 2.1 加密 Runtime / AILIVE 升级](docs/sdk_2_1_protected_runtime.md)

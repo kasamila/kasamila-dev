@@ -1,5 +1,14 @@
 # Public developer resources
 
+## SDK 2.1.0 · 2026-09-27
+
+- Encrypted V7 GLSL and ONNX packages, WASM envelope validation and automatic temporary Runtime licensing.
+- Authorization/decryption failure stops playback and releases the lease; no plaintext fallback or watermark mode.
+- Backend examples pin 2.1.0 and request protection capabilities. Media descriptors and public player calls remain unchanged.
+- Bilingual [AILIVE upgrade checklist](docs/sdk_2_1_protected_runtime.en.md) / [中文升级清单](docs/sdk_2_1_protected_runtime.md).
+- Pinned 2.0.0 remains supported. No Worker update or geometry retraining.
+- Verify actual rollout through the production release registry; validate your application before cutover.
+
 ## SDK 2.0.0 released · 2026-09-27
 
 - Breaking one-time client migration; SDK 1 is not supported by the new workflow.

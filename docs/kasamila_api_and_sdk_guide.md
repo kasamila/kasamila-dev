@@ -1,8 +1,10 @@
+> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
+
 [English](kasamila_api_and_sdk_guide.en.md) | [简体中文](kasamila_api_and_sdk_guide.md)
 
-# Kasamila API / Web SDK 2.0.0 开发者手册
+# Kasamila API / Web SDK 2.1.0 开发者手册
 
-> SDK 2.0.0 已上线：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。现在可以按清单迁移。
+> SDK 2.1.0 已上线：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。现在可以按清单迁移。
 
 
 本文是第三方接入 Kasamila 的当前入口。生产系统自 `1.11.0` 起只接受和运行
@@ -18,10 +20,10 @@ V7+v29 混合渲染已经退役。旧微调接口、旧渲染器和旧示例只�
 
 ## 1. 当前生产契约
 
-| 项目 | SDK 2.0.0 契约 |
+| 项目 | SDK 2.1.0 契约 |
 | --- | --- |
 | 模板模式 | 仅 `geometry` |
-| SDK 地址 | `https://www.kasamila.com/sdk/releases/2.0.0/kasamila.js` |
+| SDK 地址 | `https://www.kasamila.com/sdk/releases/2.1.0/kasamila.js` |
 | 媒体交付 | 所有长短模板统一使用接入方托管的 HLS |
 | 几何数据 | Kasamila Runtime Manifest 签发，V7 + 468 点 + 分块几何轨道 |
 | 默认口型 | C |
@@ -38,7 +40,7 @@ V7+v29 混合渲染已经退役。旧微调接口、旧渲染器和旧示例只�
 时也应及时调用 `POST /api/v1/runtime/sessions/end`。站内免费预览 Token 同时绑定有效
 Portal 登录 Cookie，不可复制到第三方页面使用；第三方必须用自己的 API Key 签发普通 Runtime Token。
 
-SDK `2.0.0` 增加 client 协商和 sdk 描述符；口型与媒体字段的语义保持不变。V7 对开口原片完成源牙清理后，会沿实时 468 点内唇
+SDK `2.1.0` 增加 client 协商和 sdk 描述符；口型与媒体字段的语义保持不变。V7 对开口原片完成源牙清理后，会沿实时 468 点内唇
 曲线重建闭合接触层，并随声音开度连续淡出。接触层颜色来自几何模型中已经过鲁棒
 取样和时序滤波的上下唇材质，减少逐帧原视频取样的影响，旨在抑制 IDLE、静音和闭合音中
 牙齿、高光或编码噪声形成的乳白像素、双排亮片和肉色补片；个别模板仍需按实际效果验收，不保证消除所有伪影。
@@ -54,7 +56,7 @@ SDK 会拒绝不一致的描述符，不能在第三方页面跳过检查。
 1. 第三方后端用永久 API Key 查询 ready 的 geometry 模板。
 2. 后端创建绑定模板、网页 Origin、输入方式和输出方式的 Runtime Session。
 3. 后端只把短期 `client_token` 及自己保存的 `templateMedia` 描述符返回网页。
-4. 网页加载官方 SDK `2.0.0`，将 Token 与 HLS 描述符传给
+4. 网页加载官方 SDK `2.1.0`，将 Token 与 HLS 描述符传给
    `Kasamila.create()`。
 5. SDK 获取签名几何数据，加载 V7 renderer、口腔材质和牙齿纹理，在浏览器中
    接收音频并实时渲染。
@@ -172,7 +174,7 @@ await player.setMediaStreamTrack(remoteRtcTrack);      // rtc
 
 如果人物有口型但没有牙齿，优先检查浏览器 Network/Console：
 
-1. SDK 必须显示 `Kasamila.version === '2.0.0'`；清理旧 Service Worker/CDN 缓存。
+1. SDK 必须显示 `Kasamila.version === '2.1.0'`；清理旧 Service Worker/CDN 缓存。
 2. `/web/common/teeth_cavity_texture.png` 必须返回 `200`，不能被 CSP、CORS、广告
    拦截器或第三方代理改写。
 3. `player.getMouthConfiguration().parameters.teeth_scale` 不得为 `0`。

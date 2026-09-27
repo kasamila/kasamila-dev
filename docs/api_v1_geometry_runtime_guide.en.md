@@ -1,13 +1,15 @@
+> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
+
 [English](api_v1_geometry_runtime_guide.en.md) | [简体中文](api_v1_geometry_runtime_guide.md)
 
 # Geometry models: API / Web SDK integration
 
-> SDK 2.0.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
+> SDK 2.1.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
 
 
-For Kasamila API v1 and Web SDK **2.0.0**. Geometry training is the supported template-processing mode. It computes face tracking, per-frame MediaPipe 468-point geometry, V7 oral assets, materials and calibration; it does not train person-specific neural-network weights.
+For Kasamila API v1 and Web SDK **2.1.0**. Geometry training is the supported template-processing mode. It computes face tracking, per-frame MediaPipe 468-point geometry, V7 oral assets, materials and calibration; it does not train person-specific neural-network weights.
 
-The V7 chain reconstructs lips, oral surfaces, occlusion and procedural teeth. SDK 2.0.0 retains the existing dynamic closed-lip contact layer using stable template materials, intended to reduce source-teeth/highlight artifacts in idle and closed-mouth frames. It does not guarantee removal of every artifact; assess each template's actual visual result.
+The V7 chain reconstructs lips, oral surfaces, occlusion and procedural teeth. SDK 2.1.0 retains the existing dynamic closed-lip contact layer using stable template materials, intended to reduce source-teeth/highlight artifacts in idle and closed-mouth frames. It does not guarantee removal of every artifact; assess each template's actual visual result.
 
 See the [Runtime/Agent guide](api_v1_runtime_integration_guide.en.md), [upgrade checklist](sdk_1_11_0_third_party_migration.en.md), and [runnable browser example](../examples/geometry-runtime-web/README.en.md).
 
@@ -234,7 +236,7 @@ img-src 'self' https://www.kasamila.com data: blob:;
 
 The SDK reads mouth/geometry Worker code, textures and rendering assets from its Kasamila Origin and creates same-page Blob Workers. Both `connect-src` access and `worker-src blob:` are required.
 
-Load the official `/sdk/releases/2.0.0/kasamila.js` and call `Kasamila.create()`. Do not directly instantiate internal renderer files or mirror only the entry JS. Any approved offline mirror must preserve the complete matching resource tree and paths.
+Load the official `/sdk/releases/2.1.0/kasamila.js` and call `Kasamila.create()`. Do not directly instantiate internal renderer files or mirror only the entry JS. Any approved offline mirror must preserve the complete matching resource tree and paths.
 
 ## 7. Check actual transparency
 

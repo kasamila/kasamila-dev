@@ -1,16 +1,18 @@
+> SDK 2.1：GLSL/ONNX 加密与 Runtime 临时授权，第三方无需配置解密密钥。参见 [AILIVE 升级与保护说明](sdk_2_1_protected_runtime.md)。固定 2.0.0 仍受支持。
+
 [English](api_v1_geometry_runtime_guide.en.md) | [简体中文](api_v1_geometry_runtime_guide.md)
 
 # Kasamila 几何模型 API / Web SDK 第三方接入指南
 
-> SDK 2.0.0 已上线：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。现在可以按清单迁移。
+> SDK 2.1.0 已上线：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。现在可以按清单迁移。
 
 
 本文是几何模型模板的正式第三方接入说明，适用于 Kasamila API v1 和 Web SDK
-`2.0.0`。自 2026-09-20 起，几何训练是唯一可创建和运行的模板处理模式：它通过离线计算生成逐帧跟踪、网格、口腔材质和校准数据组成的几何模型，不训练人物专属神经网络权重，
+`2.1.0`。自 2026-09-20 起，几何训练是唯一可创建和运行的模板处理模式：它通过离线计算生成逐帧跟踪、网格、口腔材质和校准数据组成的几何模型，不训练人物专属神经网络权重，
 但仍需要离线执行全片人脸追踪、MediaPipe 468 点数据生成、V7 口腔处理、材质先验、
 几何轨道打包和质量门禁。
 
-SDK `2.0.0` 在源牙清理与声音驱动牙齿显隐的基础上，为开口原片增加了通用的动态
+SDK `2.1.0` 在源牙清理与声音驱动牙齿显隐的基础上，为开口原片增加了通用的动态
 闭合唇缝重建。接触层使用几何模型内经过鲁棒取样、离线时序滤波和运行时平滑的双唇
 材质色，减少逐帧源视频唇边的影响，旨在抑制牙齿、高光及压缩噪声在 IDLE、静音或
 闭合音中形成游荡乳白像素、双排亮片或肉色补片；个别模板仍需按实际效果验收，不能保证消除所有伪影。唇缝随声音
@@ -153,7 +155,7 @@ if (!response.ok) throw new Error(payload.error?.message || `Kasamila ${response
   "data": {
     "session_id": "rts_…",
     "client_token": "ks_rt_…",
-    "sdk_version": "2.0.0",
+    "sdk_version": "2.1.0",
     "expires_at": "2026-09-20T12:00:00Z",
     "build_mode": "geometry",
     "media_delivery": "hls",
@@ -327,11 +329,11 @@ worker-src 'self' blob:;
 img-src 'self' https://www.kasamila.com data: blob:;
 ```
 
-SDK `2.0.0` 在第三方 Origin 上会通过 CORS 读取 Audio2Viseme Worker、牙齿纹理和渲染资产，再创建当前
+SDK `2.1.0` 在第三方 Origin 上会通过 CORS 读取 Audio2Viseme Worker、牙齿纹理和渲染资产，再创建当前
 页面 Origin 的口型与几何解码 Blob Worker，因此 `worker-src blob:` 是必需项。不要把 hls.js URL
 暴露成用户可输入字段；固定部署到自己的可信静态域。
 
-第三方只应加载 `/sdk/releases/2.0.0/kasamila.js` 并调用 `Kasamila.create()`。不要直接加载
+第三方只应加载 `/sdk/releases/2.1.0/kasamila.js` 并调用 `Kasamila.create()`。不要直接加载
 `custom_live_geometry_ghi_v7.js`，也不要只复制 SDK 入口文件：V7 renderer、牙齿
 纹理、Audio2Viseme Worker 和其他静态依赖必须保持同一版本和完整路径。SDK 会从
 Kasamila 脚本 Origin 加载这些资源，媒体仍从接入方 HLS Origin 加载。
@@ -363,8 +365,8 @@ const output = player.getOutput();
 | HLS 403/签名过期 | 接入方 CDN 签名生命周期短于 Runtime Session；重新签发描述符 URL |
 | HLS CORS 错误 | 检查播放列表、初始化段和所有媒体段的响应头 |
 | Worker 被 CSP 拦截 | 增加 `worker-src blob:`，并允许连接 Kasamila 静态域 |
-| 视频周期卡顿或忽快忽慢 | 确认实际加载当前 SDK 2.0.0、Blob Worker 未被 CSP 拦截、几何 bundle 的 Range 请求返回 `206`，且 HLS 媒体段可以持续预缓冲；不要由业务代码修改 `video.currentTime` 或 `playbackRate` |
-| 有口型但没有牙齿 | 确认 SDK 为 2.0.0、牙齿纹理返回 200、`teeth_scale > 0`，且没有第三方旧嘴层覆盖 SDK Canvas |
+| 视频周期卡顿或忽快忽慢 | 确认实际加载当前 SDK 2.1.0、Blob Worker 未被 CSP 拦截、几何 bundle 的 Range 请求返回 `206`，且 HLS 媒体段可以持续预缓冲；不要由业务代码修改 `video.currentTime` 或 `playbackRate` |
+| 有口型但没有牙齿 | 确认 SDK 为 2.1.0、牙齿纹理返回 200、`teeth_scale > 0`，且没有第三方旧嘴层覆盖 SDK Canvas |
 | I 不可选 | 模板不是 geometry，或调用方把候选档位当成默认档位 |
 | 本地音频无口型 | Session 未授权 `file`，浏览器音频未由手势解锁，或文件不可解码 |
 

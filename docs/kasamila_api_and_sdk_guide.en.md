@@ -1,8 +1,10 @@
+> SDK 2.1: encrypted GLSL/ONNX with temporary Runtime licensing; no caller-side key setup. See [AILIVE upgrade and protection notes](sdk_2_1_protected_runtime.en.md). Pinned 2.0.0 remains supported.
+
 [English](kasamila_api_and_sdk_guide.en.md) | [简体中文](kasamila_api_and_sdk_guide.md)
 
-# Kasamila API / Web SDK 2.0.0 developer handbook
+# Kasamila API / Web SDK 2.1.0 developer handbook
 
-> SDK 2.0.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
+> SDK 2.1.0 released: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Production supports this release; use the one-time migration checklist.
 
 
 This is the main entry point for integrators. Geometry is the supported template build/runtime mode. Person-specific MouthUNet fine-tuning and V7+v29 hybrid rendering are retired and must not be used for new integrations.
@@ -14,7 +16,7 @@ This is the main entry point for integrators. Geometry is the supported template
 | Item | Contract |
 | --- | --- |
 | Template mode | `geometry` only |
-| SDK | `https://www.kasamila.com/sdk/releases/2.0.0/kasamila.js` |
+| SDK | `https://www.kasamila.com/sdk/releases/2.1.0/kasamila.js` |
 | Media delivery | Caller-hosted HLS for short and long templates |
 | Model data | Kasamila-authorized Runtime Manifest; V7 + 468-point tracking + chunked geometry |
 | Default profile | C |
@@ -29,7 +31,7 @@ New users receive one API/SDK hour, valid for 30 days after registration. Packs 
 
 SDK `destroy()` ends the Runtime lifecycle. Backend-managed flows can use the authorized `POST /api/v1/runtime/sessions/end` operation. `stop()` only stops audio.
 
-SDK 2.0.0 adds client negotiation and the sdk release descriptor; mouth/media fields retain their semantics. Its stable-material closed-lip contact layer aims to reduce source-teeth/highlight artifacts; assess actual template quality rather than assuming every artifact is eliminated. Existing media descriptors and calibration do not require migration or geometry retraining for this SDK revision.
+SDK 2.1.0 adds client negotiation and the sdk release descriptor; mouth/media fields retain their semantics. Its stable-material closed-lip contact layer aims to reduce source-teeth/highlight artifacts; assess actual template quality rather than assuming every artifact is eliminated. Existing media descriptors and calibration do not require migration or geometry retraining for this SDK revision.
 
 ## 2. Integration flow
 
@@ -120,7 +122,7 @@ Do not overlay old MouthUNet/v29 masks, mouth/teeth layers or CSS clipping onto 
 
 If teeth are missing, check:
 
-1. Actual `Kasamila.version === '2.0.0'`; clear stale JS/Service Worker/CDN caching.
+1. Actual `Kasamila.version === '2.1.0'`; clear stale JS/Service Worker/CDN caching.
 2. `/web/common/teeth_cavity_texture.png` returns HTTP 200 and is not blocked by CSP/CORS/proxies.
 3. `player.getMouthConfiguration().parameters.teeth_scale > 0`.
 4. No old mouth layer obscures the Canvas.
