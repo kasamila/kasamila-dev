@@ -9,11 +9,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: node --test examples/audio-bridge/bridge.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: examples/realtime-integrations
+      - run: npm test
+        working-directory: examples/realtime-integrations
+      - run: node --check examples/realtime-integrations/server.mjs
+      - run: node --check examples/realtime-integrations/public/app.mjs
+      - run: python -m py_compile examples/realtime-integrations/providers/doubao-hook.py
       - run: node scripts/check_docs.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: examples/geometry-runtime-web

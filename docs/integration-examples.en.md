@@ -16,10 +16,10 @@ Current browser examples target Web SDK **2.1.0**.
 - [SDK migration](sdk_1_11_0_third_party_migration.en.md)
 - [Release notes](https://github.com/kasamila/kasamila-dev/blob/main/CHANGELOG.md)
 
-## Planned platform adapters
+## Realtime voice platform examples
 
-Complete Gemini Realtime, GPT Realtime, LiveKit and Pipecat adapters are **not yet delivered or verified**.
-The existing vendor-neutral bridge accepts decoded PCM16 or an already obtained remote RTC audio track. Provider event handling, credentials, dependency versions and end-to-end validation are separate work.
+[Seven-platform integration suite](../examples/realtime-integrations/README.en.md): OpenAI Realtime, Gemini Live, Qwen, TEN, LiveKit Agents, Pipecat and Doubao.
+Includes a local browser microphone starter, server-only provider credentials, RTC adapters and an official-demo Doubao hook. Models/regions require your provider entitlement. Local contract tests pass; paid provider E2E remains an application acceptance task.
 
 Each future adapter should ship a README, pinned dependencies/lockfile, environment-variable template, startup steps, audio-format/sample-rate and timing rules, interruption/termination handling, billing notes, errors, license and last validation date.
 Never publish real Keys, provider credentials, private template IDs, customer media or signed URLs.

@@ -25,6 +25,7 @@ Example Avatar ID `999000000001` is fictional; replace it with a template access
 
 - [Geometry browser demo](examples/geometry-runtime-web/README.en.md)
 - [PCM / RTC audio bridge](examples/audio-bridge/README.en.md)
+- [Seven realtime voice integrations](examples/realtime-integrations/README.en.md)
 
 Requires Node.js 20+. Python 3 and FFmpeg/ffprobe are needed only to package your canonical media.
 
@@ -54,8 +55,8 @@ Repository CI tests the bridge contract and example syntax/dependencies. It does
 
 ## Platform adapters
 
-Complete Gemini Realtime, GPT Realtime, LiveKit and Pipecat adapters are **planned, not yet delivered or verified**.
-The supplied vendor-neutral bridge accepts decoded mono PCM16 or an existing remote RTC audio track. Supply the Agent's output audio, not the user's microphone.
+OpenAI Realtime, Gemini Live, Qwen, TEN, LiveKit Agents, Pipecat and Doubao examples are now available in the [realtime integration suite](examples/realtime-integrations/README.en.md) (Node.js 22+).
+Cloud relays, RTC adapters and the official-demo Doubao hook have different setup requirements. Local contract tests do not claim credentialed provider end-to-end certification.
 
 ## Publication policy
 

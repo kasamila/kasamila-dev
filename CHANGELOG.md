@@ -1,5 +1,12 @@
 # Public developer resources
 
+## Realtime voice examples · 2026-09-27
+
+- SDK 2.1.0 examples for LiveKit Agents, Pipecat, TEN, OpenAI Realtime, Gemini Live, Qwen-Omni-Realtime and the official Doubao demo callback bridge.
+- Shared backend Token issuance, caller-hosted HLS, mono PCM16/RTC inputs, interruption and explicit Runtime shutdown.
+- Bilingual setup guides and offline adapter/relay tests. Provider credentials and paid-cloud E2E acceptance are not included.
+- Portal preview adds localized, milestone-based template loading progress. No SDK version or Worker change.
+
 ## SDK 2.1.0 · 2026-09-27
 
 - Encrypted V7 GLSL and ONNX packages, WASM envelope validation and automatic temporary Runtime licensing.

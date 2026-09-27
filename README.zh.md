@@ -14,6 +14,7 @@ Public documentation, API/SDK upgrade notes and integration examples for [Kasami
 - [Workspace and Key concurrency](docs/runtime_concurrency_api_sdk_upgrade_20260923.md)
 - [Runnable browser example](examples/geometry-runtime-web/README.md)
 - [PCM / RTC audio bridge](examples/audio-bridge/README.md)
+- [七大实时语音平台接入](examples/realtime-integrations/README.md)
 - [Changelog](CHANGELOG.md)
 
 Current examples target Web SDK **2.1.0**, loaded from the official Kasamila site.
@@ -48,9 +49,8 @@ Tests cover the audio-bridge contract. Complete live provider integrations requi
 
 ## Platform integrations
 
-Gemini Realtime, GPT Realtime, LiveKit and Pipecat complete adapters are **planned, not yet published or verified**.
-The supplied vendor-neutral bridge can accept decoded PCM16 or a remote RTC audio track.
-Do not confuse microphone input with an Agent's generated audio.
+OpenAI、Gemini、Qwen、TEN、LiveKit Agents、Pipecat 和豆包的接入代码与中英文步骤已提供，见[实时语音样例](examples/realtime-integrations/README.md)（Node.js 22+）。
+包含云平台中继、框架 RTC 适配器和豆包官方 Demo 回调桥；离线协议测试不等于带凭据的七平台端到端认证。
 
 ## Publication policy
 

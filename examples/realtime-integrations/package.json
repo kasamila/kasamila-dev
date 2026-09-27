@@ -1,0 +1,8 @@
+{
+  "name": "kasamila-realtime-integrations",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {"start": "node --env-file=.env server.mjs", "test": "node --test tests/*.test.mjs"},
+  "dependencies": {"ws": "8.22.0", "@google/genai": "2.24.0"}
+}

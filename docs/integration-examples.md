@@ -17,7 +17,7 @@
 
 [kasamila/kasamila-dev](https://github.com/kasamila/kasamila-dev) 是公开文档、API/SDK 更新说明、接入样例与平台集成的统一发布入口。系统核心仍在私有仓库维护。
 
-Gemini Realtime、GPT Live、LiveKit、Pipecat 等完整适配器属于后续计划；目前提供通用音频桥接底座，不宣称这些平台适配器已经实现或验证。
+[七平台接入示例](../examples/realtime-integrations/README.md) 已提供：OpenAI Realtime、Gemini Live、Qwen、TEN、LiveKit Agents、Pipecat 与豆包。包含本地麦克风界面、服务端中继、RTC 适配器与豆包官方 Demo 回调桥。离线协议测试已通过，真实平台凭据/区域权限和付费端到端验收由接入方完成。
 
 每个样例应提供 README、依赖版本、环境变量示例、启动步骤、音频格式与时钟说明、会话结束及计费说明、错误处理、许可证和最近验证日期。真实永久 Key、供应商凭据和个人模板不得进入公开仓库。
 
