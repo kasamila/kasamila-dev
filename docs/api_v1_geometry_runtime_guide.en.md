@@ -2,9 +2,12 @@
 
 # Geometry models: API / Web SDK integration
 
-For Kasamila API v1 and Web SDK **1.11.6**. Geometry training is the supported template-processing mode. It computes face tracking, per-frame MediaPipe 468-point geometry, V7 oral assets, materials and calibration; it does not train person-specific neural-network weights.
+> SDK 2.0.0 release candidate: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Wait for the production rollout notice before upgrading.
 
-The V7 chain reconstructs lips, oral surfaces, occlusion and procedural teeth. SDK 1.11.6 adds a dynamic closed-lip contact layer using stable template materials, intended to reduce source-teeth/highlight artifacts in idle and closed-mouth frames. It does not guarantee removal of every artifact; assess each template's actual visual result.
+
+For Kasamila API v1 and Web SDK **2.0.0**. Geometry training is the supported template-processing mode. It computes face tracking, per-frame MediaPipe 468-point geometry, V7 oral assets, materials and calibration; it does not train person-specific neural-network weights.
+
+The V7 chain reconstructs lips, oral surfaces, occlusion and procedural teeth. SDK 2.0.0 retains the existing dynamic closed-lip contact layer using stable template materials, intended to reduce source-teeth/highlight artifacts in idle and closed-mouth frames. It does not guarantee removal of every artifact; assess each template's actual visual result.
 
 See the [Runtime/Agent guide](api_v1_runtime_integration_guide.en.md), [upgrade checklist](sdk_1_11_0_third_party_migration.en.md), and [runnable browser example](../examples/geometry-runtime-web/README.en.md).
 
@@ -157,26 +160,25 @@ Store original and transparent descriptors separately. Select based on the actua
 ## 5. Browser initialization and buffering
 
 ```html
-<script src="https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6"
-        crossorigin="anonymous"></script>
-<div id="avatar" style="width:min(540px,100vw);aspect-ratio:9/16"></div>
+<div id="avatar" style="width:540px;height:960px"></div>
 <script type="module">
-  const response = await fetch('/api/runtime-token', {
-    method: 'POST', credentials: 'include'
+  import { loadKasamila } from "https://www.kasamila.com/sdk/bootstrap/1/loader.mjs";
+  const response = await fetch("/api/runtime-token", {
+    method: "POST", credentials: "same-origin"
   });
   const bootstrap = await response.json();
-  if (!response.ok) throw new Error('Runtime authorization failed');
+  if (!response.ok) throw new Error("Runtime bootstrap failed");
+  const Kasamila = await loadKasamila(bootstrap.sdk, "https://www.kasamila.com");
   const player = await Kasamila.create({
-    element: document.querySelector('#avatar'),
+    element: document.querySelector("#avatar"),
     sessionToken: bootstrap.sessionToken,
-    templateMedia: bootstrap.templateMedia,
-    hlsScriptUrl: '/vendor/hls.min.js'
+    templateMedia: bootstrap.templateMedia
   });
-  window.addEventListener('pagehide', () => player.destroy(), { once: true });
+  window.addEventListener("pagehide", () => player.destroy(), { once: true });
 </script>
 ```
 
-Safari can use native HLS. Other supported browsers generally need your pinned, reviewed hls.js deployment. Do not let untrusted users choose its script URL.
+Safari can use native HLS. Other supported browsers use the matching hls.js bundled inside the immutable SDK package.
 
 The SDK waits for the first geometry chunk, textures and mouth runtime before starting at frame 0. HLS forward buffering targets 12 seconds with a 30-second maximum; backward buffering is limited to 15 seconds. Geometry retains six chunks, prefetches up to three, and prefetches chunk 0 near loop completion.
 
@@ -232,7 +234,7 @@ img-src 'self' https://www.kasamila.com data: blob:;
 
 The SDK reads mouth/geometry Worker code, textures and rendering assets from its Kasamila Origin and creates same-page Blob Workers. Both `connect-src` access and `worker-src blob:` are required.
 
-Load the official `kasamila.js?v=1.11.6` and call `Kasamila.create()`. Do not directly instantiate internal renderer files or mirror only the entry JS. Any approved offline mirror must preserve the complete matching resource tree and paths.
+Load the official `/sdk/releases/2.0.0/kasamila.js` and call `Kasamila.create()`. Do not directly instantiate internal renderer files or mirror only the entry JS. Any approved offline mirror must preserve the complete matching resource tree and paths.
 
 ## 7. Check actual transparency
 

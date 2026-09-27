@@ -1,6 +1,9 @@
 [English](kasamila_api_and_sdk_guide.en.md) | [简体中文](kasamila_api_and_sdk_guide.md)
 
-# Kasamila API / Web SDK 1.11.6 开发者手册
+# Kasamila API / Web SDK 2.0.0 开发者手册
+
+> SDK 2.0.0 发布候选：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。收到生产上线通知后再切换。
+
 
 本文是第三方接入 Kasamila 的当前入口。生产系统自 `1.11.0` 起只接受和运行
 `build_mode=geometry` 的几何模型模板；人物专属 MouthUNet、微调任务和
@@ -15,10 +18,10 @@ V7+v29 混合渲染已经退役。旧微调接口、旧渲染器和旧示例只�
 
 ## 1. 当前生产契约
 
-| 项目 | SDK 1.11.6 契约 |
+| 项目 | SDK 2.0.0 契约 |
 | --- | --- |
 | 模板模式 | 仅 `geometry` |
-| SDK 地址 | `https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6` |
+| SDK 地址 | `https://www.kasamila.com/sdk/releases/2.0.0/kasamila.js` |
 | 媒体交付 | 所有长短模板统一使用接入方托管的 HLS |
 | 几何数据 | Kasamila Runtime Manifest 签发，V7 + 468 点 + 分块几何轨道 |
 | 默认口型 | C |
@@ -35,7 +38,7 @@ V7+v29 混合渲染已经退役。旧微调接口、旧渲染器和旧示例只�
 时也应及时调用 `POST /api/v1/runtime/sessions/end`。站内免费预览 Token 同时绑定有效
 Portal 登录 Cookie，不可复制到第三方页面使用；第三方必须用自己的 API Key 签发普通 Runtime Token。
 
-SDK `1.11.6` 不新增 API 字段。V7 对开口原片完成源牙清理后，会沿实时 468 点内唇
+SDK `2.0.0` 增加 client 协商和 sdk 描述符；口型与媒体字段的语义保持不变。V7 对开口原片完成源牙清理后，会沿实时 468 点内唇
 曲线重建闭合接触层，并随声音开度连续淡出。接触层颜色来自几何模型中已经过鲁棒
 取样和时序滤波的上下唇材质，减少逐帧原视频取样的影响，旨在抑制 IDLE、静音和闭合音中
 牙齿、高光或编码噪声形成的乳白像素、双排亮片和肉色补片；个别模板仍需按实际效果验收，不保证消除所有伪影。
@@ -51,7 +54,7 @@ SDK 会拒绝不一致的描述符，不能在第三方页面跳过检查。
 1. 第三方后端用永久 API Key 查询 ready 的 geometry 模板。
 2. 后端创建绑定模板、网页 Origin、输入方式和输出方式的 Runtime Session。
 3. 后端只把短期 `client_token` 及自己保存的 `templateMedia` 描述符返回网页。
-4. 网页加载官方 SDK `1.11.6`，将 Token 与 HLS 描述符传给
+4. 网页加载官方 SDK `2.0.0`，将 Token 与 HLS 描述符传给
    `Kasamila.create()`。
 5. SDK 获取签名几何数据，加载 V7 renderer、口腔材质和牙齿纹理，在浏览器中
    接收音频并实时渲染。
@@ -98,7 +101,7 @@ if (!response.ok) {
 
 // 先验证自己的终端用户与模板权限，再返回给网页。
 return {
-  sessionToken: payload.data.client_token,
+  sdk: payload.data.sdk, sessionToken: payload.data.client_token,
   expiresAt: payload.data.expires_at,
   mediaDelivery: payload.data.media_delivery,
   templateMedia: loadTrustedMediaDescriptor(
@@ -114,40 +117,26 @@ return {
 ## 4. 浏览器初始化
 
 ```html
-<script src="https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6"
-        crossorigin="anonymous"></script>
-<div id="avatar" style="width:min(540px,100vw);aspect-ratio:9/16"></div>
+<div id="avatar" style="width:540px;height:960px"></div>
 <script type="module">
-  if (Kasamila.version !== '1.11.6') {
-    throw new Error(`Kasamila SDK version mismatch: ${Kasamila.version}`);
-  }
-
-  const response = await fetch('/api/runtime-token', {
-    method: 'POST',
-    credentials: 'include'
+  import { loadKasamila } from "https://www.kasamila.com/sdk/bootstrap/1/loader.mjs";
+  const response = await fetch("/api/runtime-token", {
+    method: "POST", credentials: "same-origin"
   });
   const bootstrap = await response.json();
-  if (!response.ok) throw new Error(bootstrap.error || 'Runtime Token failed');
-
+  if (!response.ok) throw new Error("Runtime bootstrap failed");
+  const Kasamila = await loadKasamila(bootstrap.sdk, "https://www.kasamila.com");
   const player = await Kasamila.create({
-    element: document.querySelector('#avatar'),
+    element: document.querySelector("#avatar"),
     sessionToken: bootstrap.sessionToken,
-    templateMedia: bootstrap.templateMedia,
-    hlsScriptUrl: '/vendor/hls.min.js'
+    templateMedia: bootstrap.templateMedia
   });
-
-  console.info('Kasamila ready', {
-    version: Kasamila.version,
-    output: player.getOutput(),
-    mouth: player.getMouthConfiguration()
-  });
-
-  window.addEventListener('pagehide', () => player.destroy(), { once: true });
+  window.addEventListener("pagehide", () => player.destroy(), { once: true });
 </script>
 ```
 
 Safari 可使用原生 HLS；Chrome、Edge、Firefox 和多数 Android 浏览器需要接入方
-提供固定且经过审核的 hls.js。不要把 hls.js URL 暴露成用户输入。
+使用 SDK 包内的 hls.js，无需外部脚本地址。
 SDK 会在几何、纹理和口型运行时就绪后才从第 0 帧启动视频；HLS 与 2 秒几何分块
 分别预缓冲，几何解压解析在 Blob Worker 中完成。模板始终以 `1.0` 倍速运行，接入方
 不要直接修改 SDK 内部 video 的 `currentTime` 或 `playbackRate`。
@@ -183,7 +172,7 @@ await player.setMediaStreamTrack(remoteRtcTrack);      // rtc
 
 如果人物有口型但没有牙齿，优先检查浏览器 Network/Console：
 
-1. SDK 必须显示 `Kasamila.version === '1.11.6'`；清理旧 Service Worker/CDN 缓存。
+1. SDK 必须显示 `Kasamila.version === '2.0.0'`；清理旧 Service Worker/CDN 缓存。
 2. `/web/common/teeth_cavity_texture.png` 必须返回 `200`，不能被 CSP、CORS、广告
    拦截器或第三方代理改写。
 3. `player.getMouthConfiguration().parameters.teeth_scale` 不得为 `0`。

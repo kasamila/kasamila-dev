@@ -1,4 +1,4 @@
-# Kasamila Web SDK 1.11.6 几何模型第三方接入样例
+# Kasamila Web SDK 2.0.0 几何模型第三方接入样例
 
 站内源文件：[服务端 server.mjs](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/server.mjs) · [浏览器 app.js](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/public/app.js) · [页面 index.html](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/public/index.html) · [原背景描述符](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/config/kasamila-media.original.example.json) · [透明背景描述符](https://github.com/kasamila/kasamila-dev/blob/main/examples/geometry-runtime-web/config/kasamila-media.transparent.example.json)。
 
@@ -9,7 +9,7 @@
 已有系统升级前请先阅读
 [`docs/sdk_1_11_0_third_party_migration.md`](../../docs/sdk_1_11_0_third_party_migration.md)。
 不要从本样例中只复制 WebGL renderer：浏览器必须通过官方
-`kasamila.js?v=1.11.6` 和 `Kasamila.create()` 初始化完整 V7 口腔、内唇和牙齿链。
+`session.sdk.loader_url` 和 `Kasamila.create()` 初始化完整 V7 口腔、内唇和牙齿链。
 
 ## 1. 准备媒体描述符
 
@@ -64,9 +64,11 @@ Origin。生产环境必须给 `/api/runtime-token` 增加自己的登录校验�
 - 正确设置 MIME：m3u8 为 `application/vnd.apple.mpegurl`，fMP4 为 `video/mp4`。
 - CSP 至少允许 `script-src https://www.kasamila.com`、`connect-src` 访问 Kasamila 与媒体域、`media-src` 访问媒体域，以及 `worker-src blob:`。
 - `img-src` 必须允许 `https://www.kasamila.com`，否则官方牙齿/口腔纹理会被拦截。
-- 初始化后确认 `Kasamila.version === '1.11.6'` 且 `player.getMouthConfiguration().parameters.teeth_scale > 0`。
+- 初始化后确认 `Kasamila.version === '2.0.0'` 且 `player.getMouthConfiguration().parameters.teeth_scale > 0`。
 - 不记录 API Key、Runtime Token 或签名资产 URL。
 - 页面卸载时调用 `destroy()`；切换声音源前调用 `stop()`。
 
 完整字段、错误码、透明媒体和上线检查见
 [`docs/api_v1_geometry_runtime_guide.md`](../../docs/api_v1_geometry_runtime_guide.md)。
+
+SDK 2.0.0 发布候选。后端配置 KASAMILA_SDK_VERSION=2.0.0、KASAMILA_UPDATE_POLICY=pinned，透传 sdk 描述符，网页使用不可变 bootstrap。HLS 已内置，不需要外部解码器。请遵循[版本契约](../../docs/sdk_2_runtime_release_contract.md)，收到生产上线通知后再切换。

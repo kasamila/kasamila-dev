@@ -2,12 +2,15 @@
 
 # Kasamila 推理 API、Web SDK 与 MCP/Agent 集成指南
 
+> SDK 2.0.0 发布候选：请先阅读[新 Runtime 版本契约](sdk_2_runtime_release_contract.md)。不兼容 SDK 1 或旧可变入口。本文固定版本检查仅适用于显式 pinned 的样例，不能与服务端全局最新版本比较。后端须透传 Session 返回的 sdk，网页使用 bootstrap 加载。HLS 已内置。收到生产上线通知后再切换。
+
+
 本文面向实际接入 Kasamila 数字人的前端、后端和 Agent 开发者。生产架构始终分成两个安全域：商户后端持有永久 API Key，浏览器只持有短期 Runtime Token。音频、Audio2Viseme 推理和 WebGL 渲染默认在最终用户浏览器完成。
 
 本文覆盖几何模型生产 Runtime。几何模型模板的 HLS 媒体交接、透明
 Packed Matte、长模板和完整可运行样例见
 [`api_v1_geometry_runtime_guide.md`](api_v1_geometry_runtime_guide.md)。当前 Web SDK
-版本为 `1.11.6`。已有第三方升级请同时执行
+版本为 `2.0.0`。已有第三方升级请同时执行
 [`sdk_1_11_0_third_party_migration.md`](sdk_1_11_0_third_party_migration.md)。
 Runtime 并发配额、购买及 Key 分配的升级说明见
 [`runtime_concurrency_api_sdk_upgrade_20260923.md`](runtime_concurrency_api_sdk_upgrade_20260923.md)。
@@ -291,34 +294,21 @@ curl --fail-with-body 'https://www.kasamila.com/api/v1/runtime/sessions' \
 ## 4. 前端 Web 集成
 
 ```html
-<script src="https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6"
-        crossorigin="anonymous"></script>
-<div id="avatar" style="width: min(540px, 100vw); aspect-ratio: 9 / 16"></div>
-<button id="enable-mic">启用麦克风</button>
-<script>
-  const tokenResponse = await fetch('/api/digital-human-token', {
-    credentials: 'include'
+<div id="avatar" style="width:540px;height:960px"></div>
+<script type="module">
+  import { loadKasamila } from "https://www.kasamila.com/sdk/bootstrap/1/loader.mjs";
+  const response = await fetch("/api/runtime-token", {
+    method: "POST", credentials: "same-origin"
   });
-  if (!tokenResponse.ok) throw new Error('Cannot create Runtime Session');
-  const { sessionToken, mediaDelivery, templateMedia } = await tokenResponse.json();
-
-  const options = {
-    element: document.querySelector('#avatar'),
-    sessionToken
-  };
-  if (mediaDelivery === 'hls') {
-    options.templateMedia = templateMedia;
-    options.hlsScriptUrl = '/vendor/hls.min.js';
-  }
-  const player = await Kasamila.create(options);
-
-  // 由模板配置自动确定，无需第三方前端重复保存参数。
-  const mouth = player.getMouthConfiguration();
-
-  document.querySelector('#enable-mic').addEventListener('click', async () => {
-    await player.setMicrophone();
+  const bootstrap = await response.json();
+  if (!response.ok) throw new Error("Runtime bootstrap failed");
+  const Kasamila = await loadKasamila(bootstrap.sdk, "https://www.kasamila.com");
+  const player = await Kasamila.create({
+    element: document.querySelector("#avatar"),
+    sessionToken: bootstrap.sessionToken,
+    templateMedia: bootstrap.templateMedia
   });
-  window.addEventListener('pagehide', () => player.destroy(), { once: true });
+  window.addEventListener("pagehide", () => player.destroy(), { once: true });
 </script>
 ```
 
@@ -333,7 +323,7 @@ curl --fail-with-body 'https://www.kasamila.com/api/v1/runtime/sessions' \
 - `mask_offset`：-0.20–0.50；
 - `openness_scale`、`width_scale`、`left_openness_scale`、`left_width_scale`：0.50–2.00。
 
-点击“保存到模板”后，配置写入模板记录。后续创建的 Runtime Session 会在 Session 响应、目录接口和 Manifest 中返回相同的 `mouth_profile`、`mouth_parameters`；SDK 1.11.6 在启动 WebGL 后自动应用它们，并保留异常历史模板的几何安全上限。已经初始化的浏览器实例不会被服务端配置热重置：Portal 会先把当前比较值应用到实例，再保存给后续会话。`setProfile()` 和 `setMouthParameters()` 只用于当前浏览器的实时比较，不会改变模板，除非管理 Portal 再调用模板 PATCH 保存。
+点击“保存到模板”后，配置写入模板记录。后续创建的 Runtime Session 会在 Session 响应、目录接口和 Manifest 中返回相同的 `mouth_profile`、`mouth_parameters`；SDK 2.0.0 在启动 WebGL 后自动应用它们，并保留异常历史模板的几何安全上限。已经初始化的浏览器实例不会被服务端配置热重置：Portal 会先把当前比较值应用到实例，再保存给后续会话。`setProfile()` 和 `setMouthParameters()` 只用于当前浏览器的实时比较，不会改变模板，除非管理 Portal 再调用模板 PATCH 保存。
 
 管理系统也可调用模板 PATCH；`mouth_parameters` 是局部合并而非整对象替换。例如只提交 `{"mouth_parameters":{"mask_offset":0.08}}` 时，其余五项保持不变。未知字段、越界值和显式 `null` 返回 `422 validation_error`。完整管理端点及字段表见 `api_v1_phase2_avatars.md`。
 
@@ -439,9 +429,9 @@ Agent 将 `client_token` 安全传给网页。网页初始化 SDK 后会轮询�
 - `runtime_origin_mismatch`：签发 Session 的 `origin` 与页面 `location.origin` 不一致。
 - 请求透明但得到原视频：检查 `output_behavior=original_passthrough`；这表示模板不是明确的绿幕/蓝幕源，系统按设计跳过抠像。
 - geometry 初始化拒绝缺少媒体：生产 SDK 不使用 Portal 的 `providerPreview`；按几何接入指南传入与时间线匹配的 HLS `templateMedia`。
-- 第三方页面 Worker 或纹理被 CSP 拦截：SDK 1.11.6 的 Audio2Viseme 和几何分块解码都需要 `worker-src blob:`，同时 `connect-src` 和 `img-src` 允许 `https://www.kasamila.com`。
+- 第三方页面 Worker 或纹理被 CSP 拦截：SDK 2.0.0 的 Audio2Viseme 和几何分块解码都需要 `worker-src blob:`，同时 `connect-src` 和 `img-src` 允许 `https://www.kasamila.com`。
 - 视频周期卡顿或忽快忽慢：确认几何 Range 返回 `206`、HLS 能持续预缓冲、Blob Worker 未被 CSP 拦截，并删除业务侧对 SDK 内部 video 的 `currentTime`/`playbackRate` 校时逻辑。
-- 有口型但没有牙齿：确认实际 SDK 为 `1.11.6`，牙齿纹理请求返回 200，`teeth_scale > 0`，并删除第三方旧嘴部图层或对内部 renderer 的直接调用；详见第三方升级指南。
+- 有口型但没有牙齿：确认实际 SDK 为 `2.0.0`，牙齿纹理请求返回 200，`teeth_scale > 0`，并删除第三方旧嘴部图层或对内部 renderer 的直接调用；详见第三方升级指南。
 
 ## 8. 上线检查表
 

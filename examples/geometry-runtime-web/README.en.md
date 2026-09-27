@@ -1,6 +1,6 @@
 # Runnable geometry Runtime browser example
 
-Targets Web SDK **1.11.6**.
+Targets Web SDK **2.0.0**.
 [Source repository](https://github.com/kasamila/kasamila-dev/tree/main/examples/geometry-runtime-web) · [Geometry contract](../../docs/api_v1_geometry_runtime_guide.en.md) · [Upgrade guide](../../docs/sdk_1_11_0_third_party_migration.en.md)
 
 The demo exchanges a server-only API Key for a short-lived Token, loads the official SDK and drives caller-hosted HLS template media with uploaded audio.
@@ -21,7 +21,7 @@ npm ci
 cd ../..
 ```
 
-The example pins HLS 1.7.3 and loads SDK 1.11.6 from the official site. Do not copy only the WebGL renderer or change the production geometry chain.
+The example pins HLS 1.7.3 and loads SDK 2.0.0 from the official site. Do not copy only the WebGL renderer or change the production geometry chain.
 
 ## 2. Prepare media
 
@@ -76,3 +76,5 @@ Uploading/playing audio may need a user gesture. Creating this ordinary Runtime 
 
 The demo server binds to loopback. Deploying it publicly without business authentication would let visitors consume your Key's billable quota.
 Full errors, transparent-media requirements and acceptance tests are in the [geometry guide](../../docs/api_v1_geometry_runtime_guide.en.md).
+
+SDK 2.0.0 release candidate. Configure backend KASAMILA_SDK_VERSION=2.0.0 and KASAMILA_UPDATE_POLICY=pinned. The backend forwards sdk, and the browser loads the immutable bootstrap. HLS is bundled; no external HLS decoder is required. Follow the [release contract](../../docs/sdk_2_runtime_release_contract.en.md). Wait for the production rollout notice before cutover.

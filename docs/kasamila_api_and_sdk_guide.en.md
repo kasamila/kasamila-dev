@@ -1,6 +1,9 @@
 [English](kasamila_api_and_sdk_guide.en.md) | [简体中文](kasamila_api_and_sdk_guide.md)
 
-# Kasamila API / Web SDK 1.11.6 developer handbook
+# Kasamila API / Web SDK 2.0.0 developer handbook
+
+> SDK 2.0.0 release candidate: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Wait for the production rollout notice before upgrading.
+
 
 This is the main entry point for integrators. Geometry is the supported template build/runtime mode. Person-specific MouthUNet fine-tuning and V7+v29 hybrid rendering are retired and must not be used for new integrations.
 
@@ -11,7 +14,7 @@ This is the main entry point for integrators. Geometry is the supported template
 | Item | Contract |
 | --- | --- |
 | Template mode | `geometry` only |
-| SDK | `https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6` |
+| SDK | `https://www.kasamila.com/sdk/releases/2.0.0/kasamila.js` |
 | Media delivery | Caller-hosted HLS for short and long templates |
 | Model data | Kasamila-authorized Runtime Manifest; V7 + 468-point tracking + chunked geometry |
 | Default profile | C |
@@ -26,7 +29,7 @@ New users receive one API/SDK hour, valid for 30 days after registration. Packs 
 
 SDK `destroy()` ends the Runtime lifecycle. Backend-managed flows can use the authorized `POST /api/v1/runtime/sessions/end` operation. `stop()` only stops audio.
 
-SDK 1.11.6 introduces no new mouth/media API fields. Its stable-material closed-lip contact layer aims to reduce source-teeth/highlight artifacts; assess actual template quality rather than assuming every artifact is eliminated. Existing media descriptors and calibration do not require migration or geometry retraining for this SDK revision.
+SDK 2.0.0 adds client negotiation and the sdk release descriptor; mouth/media fields retain their semantics. Its stable-material closed-lip contact layer aims to reduce source-teeth/highlight artifacts; assess actual template quality rather than assuming every artifact is eliminated. Existing media descriptors and calibration do not require migration or geometry retraining for this SDK revision.
 
 ## 2. Integration flow
 
@@ -59,7 +62,7 @@ const response = await fetch('https://www.kasamila.com/api/v1/runtime/sessions',
 const payload = await response.json();
 if (!response.ok) throw new Error(payload.error?.code || 'runtime_failed');
 return {
-  sessionToken: payload.data.client_token,
+  sdk: payload.data.sdk, sessionToken: payload.data.client_token,
   expiresAt: payload.data.expires_at,
   mediaDelivery: payload.data.media_delivery,
   templateMedia: loadTrustedMediaDescriptor(
@@ -72,27 +75,25 @@ Keep Keys in backend configuration/Secret Manager. Never let the browser submit 
 ## 4. Browser initialization
 
 ```html
-<script src="https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6"
-        crossorigin="anonymous"></script>
-<div id="avatar" style="width:min(540px,100vw);aspect-ratio:9/16"></div>
+<div id="avatar" style="width:540px;height:960px"></div>
 <script type="module">
-  if (Kasamila.version !== '1.11.6') throw new Error('SDK version mismatch');
-  const response = await fetch('/api/runtime-token', {
-    method: 'POST', credentials: 'include'
+  import { loadKasamila } from "https://www.kasamila.com/sdk/bootstrap/1/loader.mjs";
+  const response = await fetch("/api/runtime-token", {
+    method: "POST", credentials: "same-origin"
   });
   const bootstrap = await response.json();
-  if (!response.ok) throw new Error('Runtime Token failed');
+  if (!response.ok) throw new Error("Runtime bootstrap failed");
+  const Kasamila = await loadKasamila(bootstrap.sdk, "https://www.kasamila.com");
   const player = await Kasamila.create({
-    element: document.querySelector('#avatar'),
+    element: document.querySelector("#avatar"),
     sessionToken: bootstrap.sessionToken,
-    templateMedia: bootstrap.templateMedia,
-    hlsScriptUrl: '/vendor/hls.min.js'
+    templateMedia: bootstrap.templateMedia
   });
-  window.addEventListener('pagehide', () => player.destroy(), { once: true });
+  window.addEventListener("pagehide", () => player.destroy(), { once: true });
 </script>
 ```
 
-Use native HLS when available and a fixed reviewed hls.js otherwise. The SDK starts at frame 0 only once initial geometry, textures and mouth runtime are ready. It prefetches media and two-second geometry chunks; gzip/JSON decoding runs in a Blob Worker.
+Use native HLS when available; otherwise the SDK uses its bundled hls.js. The SDK starts at frame 0 only once initial geometry, textures and mouth runtime are ready. It prefetches media and two-second geometry chunks; gzip/JSON decoding runs in a Blob Worker.
 
 Decoded frame PTS is the template clock, always at `1.0` playback rate. Never adjust internal video time/rate yourself. Idle loops the template; speech continues from the current idle position.
 
@@ -119,7 +120,7 @@ Do not overlay old MouthUNet/v29 masks, mouth/teeth layers or CSS clipping onto 
 
 If teeth are missing, check:
 
-1. Actual `Kasamila.version === '1.11.6'`; clear stale JS/Service Worker/CDN caching.
+1. Actual `Kasamila.version === '2.0.0'`; clear stale JS/Service Worker/CDN caching.
 2. `/web/common/teeth_cavity_texture.png` returns HTTP 200 and is not blocked by CSP/CORS/proxies.
 3. `player.getMouthConfiguration().parameters.teeth_scale > 0`.
 4. No old mouth layer obscures the Canvas.

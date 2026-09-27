@@ -2,8 +2,6 @@ import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicRoot = join(root, 'public');
@@ -15,6 +13,8 @@ const avatarId = process.env.KASAMILA_AVATAR_ID || '';
 const templateCode = process.env.KASAMILA_TEMPLATE_CODE || '001';
 const outputMode = process.env.KASAMILA_OUTPUT_MODE || 'original';
 const descriptorPath = process.env.KASAMILA_MEDIA_DESCRIPTOR || '';
+const sdkVersion = process.env.KASAMILA_SDK_VERSION || '2.0.0';
+const updatePolicy = process.env.KASAMILA_UPDATE_POLICY || 'pinned';
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -57,6 +57,13 @@ async function createRuntimeSession() {
       input_modes: ['file', 'audio_url', 'pcm_stream', 'tts_stream'],
       output_mode: outputMode,
       max_duration_seconds: 600,
+      client: {
+        sdk_version: sdkVersion,
+        protocol: 'kasamila-runtime-v1',
+        geometry_contract: 'kasamila-geometry-track-v2',
+        update_policy: updatePolicy,
+        required_capabilities: ['geometry-v7', 'hls'],
+      },
     }),
   });
   const payload = await response.json().catch(() => ({}));
@@ -71,7 +78,7 @@ async function createRuntimeSession() {
 function staticPath(urlPath) {
   if (urlPath === '/') return join(publicRoot, 'index.html');
   if (urlPath === '/vendor/hls.min.js') {
-    return require.resolve('hls.js/dist/hls.min.js');
+    return join(root, '..', '..', 'web', 'vendor', 'hls.js', 'hls.min.js');
   }
   let relative;
   try {
@@ -90,11 +97,12 @@ createServer(async (request, response) => {
     // Demo only. A production endpoint must authenticate your own end user,
     // authorize the requested avatar and apply rate limits before minting a token.
     try {
-      const runtime = await createRuntimeSession();
-      const media = runtime.media_delivery === 'hls' ? templateMedia() : null;
-      if (runtime.media_delivery === 'hls' && !media) {
+      // Validate local configuration BEFORE opening a billed Runtime session.
+      const media = templateMedia();
+      if (!media) {
         throw new Error('Geometry Runtime requires KASAMILA_MEDIA_DESCRIPTOR');
       }
+      const runtime = await createRuntimeSession();
       json(response, 200, {
         sessionToken: runtime.client_token,
         expiresAt: runtime.expires_at,
@@ -102,6 +110,8 @@ createServer(async (request, response) => {
         mediaDelivery: runtime.media_delivery,
         outputMode: runtime.output_mode,
         templateMedia: media,
+        sdk: runtime.sdk,
+        apiBase,
       });
     } catch (error) {
       json(response, Number(error.status) || 500, { error: error.message });

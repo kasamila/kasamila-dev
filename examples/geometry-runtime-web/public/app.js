@@ -1,17 +1,9 @@
 const status = document.querySelector('#status');
-if (globalThis.Kasamila?.version !== '1.11.6') {
-  throw new Error(`Expected Kasamila SDK 1.11.6, got ${globalThis.Kasamila?.version || 'missing'}`);
-}
-const component = document.createElement('kasamila-avatar');
-component.style.width = '100%';
-component.style.height = '100%';
-document.querySelector('#avatar').replaceChildren(component);
 
 function show(value) {
   status.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
-component.addEventListener('kasamila-error', event => show({ error: event.detail?.message || String(event.detail) }));
 
 const tokenResponse = await fetch('/api/runtime-token', {
   method: 'POST',
@@ -20,6 +12,13 @@ const tokenResponse = await fetch('/api/runtime-token', {
 });
 const bootstrap = await tokenResponse.json();
 if (!tokenResponse.ok) throw new Error(bootstrap.error || 'Runtime Token creation failed');
+const { loadKasamila } = await import(new URL('/sdk/bootstrap/1/loader.mjs', bootstrap.apiBase).href);
+const Kasamila = await loadKasamila(bootstrap.sdk, bootstrap.apiBase);
+const component = document.createElement('kasamila-avatar');
+component.style.width = '100%';
+component.style.height = '100%';
+document.querySelector('#avatar').replaceChildren(component);
+component.addEventListener('kasamila-error', event => show({ error: event.detail?.message || String(event.detail) }));
 
 const createOptions = {
   element: component,
@@ -27,7 +26,6 @@ const createOptions = {
 };
 if (bootstrap.mediaDelivery === 'hls') {
   createOptions.templateMedia = bootstrap.templateMedia;
-  createOptions.hlsScriptUrl = '/vendor/hls.min.js';
 }
 
 const player = await Kasamila.create(createOptions);

@@ -29,7 +29,7 @@ for (const filename of files) {
   if (filename.endsWith(".en.md") && path.dirname(filename) === path.join(root, "docs")) {
     const prose = body.replace(/^.*?\n\n/s, ""); // Exclude bilingual navigation.
     assert.ok(!/[\u3400-\u9fff]/.test(prose), "Untranslated Chinese in English guide: " + filename);
-    assert.ok(prose.includes("1.11.6"), "Missing documented SDK version");
+    assert.ok(/(?:1\.11\.6|2\.0\.0)/.test(prose), "Missing documented SDK version");
   }
   assert.ok(!/(?:192\.168\.\d+\.\d+|ks_(?:live|test|rt)_[A-Za-z0-9_-]{24,}|\x2d{5}BEGIN .*PRIVATE KEY)/.test(body),
     "Potential sensitive content: " + filename);

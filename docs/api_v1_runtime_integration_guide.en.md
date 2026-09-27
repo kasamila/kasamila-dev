@@ -2,7 +2,10 @@
 
 # Kasamila Runtime API, Web SDK and MCP/Agent integration
 
-Applies to Kasamila API v1 and Web SDK **1.11.6**. Geometry templates are the supported production mode. Audio2Viseme inference and WebGL rendering run in the end user's browser.
+> SDK 2.0.0 release candidate: read the [new Runtime release contract](sdk_2_runtime_release_contract.en.md) before integration. SDK 1 and mutable entry URLs are retired. This guide's fixed version checks apply only to explicitly pinned examples, not to a server-global latest version. Forward the Session response's sdk object from your backend and load it with the bootstrap. HLS is bundled. Wait for the production rollout notice before upgrading.
+
+
+Applies to Kasamila API v1 and Web SDK **2.0.0**. Geometry templates are the supported production mode. Audio2Viseme inference and WebGL rendering run in the end user's browser.
 
 The application backend holds a permanent API Key; the browser receives only a short-lived Runtime Token.
 See the [geometry/HLS guide](api_v1_geometry_runtime_guide.en.md), [upgrade guide](sdk_1_11_0_third_party_migration.en.md), and [concurrency guide](runtime_concurrency_api_sdk_upgrade_20260923.en.md).
@@ -261,22 +264,21 @@ curl --fail-with-body --max-time 15 \
 ## 5. Initialize the browser SDK
 
 ```html
-<script src="https://www.kasamila.com/web/sdk/kasamila.js?v=1.11.6"
-        crossorigin="anonymous"></script>
-<div id="avatar" style="width:min(540px,100vw);aspect-ratio:9/16"></div>
+<div id="avatar" style="width:540px;height:960px"></div>
 <script type="module">
-  const response = await fetch('/api/runtime-token', {
-    method: 'POST', credentials: 'include'
+  import { loadKasamila } from "https://www.kasamila.com/sdk/bootstrap/1/loader.mjs";
+  const response = await fetch("/api/runtime-token", {
+    method: "POST", credentials: "same-origin"
   });
   const bootstrap = await response.json();
-  if (!response.ok) throw new Error('Runtime authorization failed');
+  if (!response.ok) throw new Error("Runtime bootstrap failed");
+  const Kasamila = await loadKasamila(bootstrap.sdk, "https://www.kasamila.com");
   const player = await Kasamila.create({
-    element: document.querySelector('#avatar'),
+    element: document.querySelector("#avatar"),
     sessionToken: bootstrap.sessionToken,
-    templateMedia: bootstrap.templateMedia,
-    hlsScriptUrl: '/vendor/hls.min.js'
+    templateMedia: bootstrap.templateMedia
   });
-  window.addEventListener('pagehide', () => player.destroy(), { once: true });
+  window.addEventListener("pagehide", () => player.destroy(), { once: true });
 </script>
 ```
 
