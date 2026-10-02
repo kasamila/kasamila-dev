@@ -4,5 +4,7 @@
 <style>body{margin:0;background:#0c1420;color:#e9f5ff;font:16px system-ui;padding:24px}main{max-width:1000px;margin:auto}#avatar{height:min(65vh,600px);background:#152538;border-radius:16px;margin:16px 0}button{padding:12px;margin:4px;border-radius:8px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere}progress{width:100%}</style>
 <main><h1>Realtime voice + Kasamila</h1><p>Local developer starter · uses billed API Runtime time. Server-side provider configuration is required.</p>
 <button id="start">Start / connect microphone</button><button id="interrupt" disabled>Clear avatar audio</button><button id="end" disabled>End session & billing</button>
+<p><a href="/public/video-call.html" style="color:#9bdcff">Video-call customer service</a> · <a href="/public/studio.html" style="color:#9bdcff">OBS / Streamlabs host control</a></p>
+<div id="dify" hidden><button id="record">Record a question (≤15s)</button><button id="commit">Submit recorded question</button><input id="question" placeholder="Or type a knowledge-base question"><button id="send-text">Ask Dify</button></div>
 <div id="avatar"></div><progress id="loading" max="4" value="0" hidden></progress><pre id="status" role="status"></pre></main>
-<script type="module" src="/public/app.mjs"></script></html>
+<script type="module" src="/public/voice-app.mjs"></script></html>

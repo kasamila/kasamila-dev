@@ -18,7 +18,9 @@ Current browser examples target Web SDK **2.1.0**.
 
 ## Realtime voice platform examples
 
-[Seven-platform integration suite](../examples/realtime-integrations/README.en.md): OpenAI Realtime, Gemini Live, Qwen, TEN, LiveKit Agents, Pipecat and Doubao.
+[Thirteen-platform integration suite](../examples/realtime-integrations/README.en.md): OpenAI Realtime, Gemini Live, Qwen, TEN, LiveKit Agents, Pipecat, Doubao, Grok, ElevenLabs, Vapi, Deepgram, Hume EVI and Dify.
+
+[New voice-platform guide](../examples/realtime-integrations/voice-platforms/README.en.md) covers existing Vapi Assistant IDs, Dify knowledge bases and the ElevenLabs video-call UI. [OBS / Streamlabs](../examples/realtime-integrations/obs-streamlabs/README.en.md) shares one transparent host with input, queues, interruptions, scene layouts and explicit termination. [Two multilingual tutorials](../content/blog/README.md) contain fifteen actual language bodies and machine-readable Markdown/JSON URLs.
 Includes a local browser microphone starter, server-only provider credentials, RTC adapters and an official-demo Doubao hook. Models/regions require your provider entitlement. Local contract tests pass; paid provider E2E remains an application acceptance task.
 
 Each future adapter should ship a README, pinned dependencies/lockfile, environment-variable template, startup steps, audio-format/sample-rate and timing rules, interruption/termination handling, billing notes, errors, license and last validation date.

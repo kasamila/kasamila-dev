@@ -44,6 +44,8 @@ test("local TEN relay authorizes Kasamila, protects secrets and ends lease on di
       child.once("error", reject);
     });
     assert.equal((await fetch(origin + "/")).status, 200);
+    for (const page of ['studio.html', 'overlay.html', 'video-call.html'])
+      assert.equal((await fetch(origin + '/public/' + page)).status, 200);
     assert.equal((await fetch(origin + "/.env")).status, 404);
     assert.equal((await fetch(origin + "/providers/doubao-hook.py")).status, 404);
     assert.equal((await fetch(origin + "/api/runtime-token", {method: "POST", headers: {Origin: "https://other.test"}})).status, 403);
@@ -67,6 +69,8 @@ test("local TEN relay authorizes Kasamila, protects secrets and ends lease on di
     browser.close();
     for (let i=0; i<40 && !ended; i++) await new Promise(resolve => setTimeout(resolve, 25));
     assert.equal(ended, 1);
+    assert.equal((await fetch(origin + '/api/runtime-end', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json'}, body: JSON.stringify({channel: bootstrap.channel})})).status, 200);
+    assert.equal(ended, 1, 'explicit end after disconnect is idempotent');
   } finally {
     browser?.terminate();
     child.kill();

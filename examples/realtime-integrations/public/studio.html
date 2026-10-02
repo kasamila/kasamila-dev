@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Kasamila host control</title>
+<style>body{font:16px system-ui;background:#0c1420;color:#eef6ff;max-width:880px;margin:30px auto;padding:20px}button,input,select,textarea{font:inherit;padding:10px;margin:6px}textarea{width:95%}output{display:block;white-space:pre-wrap;overflow-wrap:anywhere}.panel{border:1px solid #39516c;padding:14px;border-radius:12px;margin:16px 0}</style></head><body>
+<h1>One avatar host, many live scenarios</h1><p>Local developer demo. API Runtime is billed while running, including silence/hidden sources. End explicitly. OBS/Streamlabs needs the transparent canonical media descriptor.</p>
+<button id="room">Create Browser Source link (no Runtime yet)</button><output id="link"></output><output id="status" role="status"></output>
+<div class="panel"><button data-command="start" disabled>Start host</button><button data-command="interrupt" disabled>Interrupt / clear queue</button><button data-command="end" disabled>End session & billing</button>
+<select id="scene"><option value="chat">Chat</option><option value="entertainment">Entertainment</option><option value="commerce">Commerce</option><option value="game">Game</option></select><button id="layout" disabled>Apply host layout</button>
+<input id="obs-scene" placeholder="Exact OBS scene name"><button id="obs" disabled>Switch OBS scene (configured server)</button></div>
+<div class="panel"><button id="mic" disabled>Connect audio input</button><button id="mic-stop" disabled>Stop audio input</button><button data-command="input_end" disabled>Dify: submit recorded utterance</button>
+<label>Queue audio files (max four; each ≤30s): <input type="file" id="files" accept="audio/*" multiple disabled></label><output id="queue"></output></div>
+<div class="panel"><h2>Moderated Streamlabs alerts / Dify text</h2><p>Alerts are text-only until an operator reviews them. They are not sent automatically to an agent.</p><textarea id="text" maxlength="4000" placeholder="Review event text or enter a question for Dify"></textarea><button id="send" disabled>Send to Dify</button><button id="alert">Load synthetic Streamlabs donation</button></div>
+<script type="module" src="/public/studio.mjs"></script></body></html>

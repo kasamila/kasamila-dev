@@ -8,6 +8,10 @@ import {openaiSession, openaiOutput} from "./providers/openai.mjs";
 import {qwenSession, qwenOutput} from "./providers/qwen.mjs";
 import {geminiOutput} from "./providers/gemini.mjs";
 import {tenOutput} from "./providers/ten.mjs";
+import {voicePlatforms, required as platformKeys, inputRates, openVoicePlatform} from './providers/voice-platforms.mjs';
+import {createHostRooms} from './common/host-rooms.mjs';
+import {connectStreamlabs} from './providers/streamlabs.mjs';
+import {switchObsScene} from './common/obs.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 8790);
@@ -16,6 +20,12 @@ const apiBase = process.env.KASAMILA_API_BASE || "https://www.kasamila.com";
 const provider = process.env.PROVIDER || "openai";
 const channels = new Map();
 const maxBytes = 256 * 1024;
+const rooms = createHostRooms({origin, release: channel => {
+  const state = channels.get(channel);
+  if (!state) return;
+  state.socket?.close(1000, 'Host session ended'); state.input?.end();
+  clearTimeout(state.timeout); void releaseState(state).then(() => channels.delete(channel)).catch(() => console.error('Runtime release failed'));
+}});
 function json(res, status, value) {
   res.writeHead(status, {"Content-Type": "application/json", "Cache-Control": "no-store"});
   res.end(JSON.stringify(value));
@@ -40,14 +50,21 @@ function emit(socket, event) {
   socket.send(JSON.stringify(event));
 }
 async function endLease(token) {
-  await fetch(apiBase + "/api/v1/runtime/sessions/end", {
+  const response = await fetch(apiBase + "/api/v1/runtime/sessions/end", {
     method: "POST", headers: {Authorization: "Bearer " + token}, signal: AbortSignal.timeout(10000),
-  }).catch(() => {});
+  });
+  if (!response.ok) throw new Error('Runtime release rejected');
+}
+function releaseState(state) {
+  if (!state.release) state.release = endLease(state.token).catch(() => {
+    state.release = null; throw new Error('Runtime release not confirmed');
+  });
+  return state.release.then(() => {for (const [channel, candidate] of channels) if (candidate === state) rooms.unbindRuntime(channel);});
 }
 function requireConfig() {
-  if (!["openai", "qwen", "gemini", "ten", "bridge"].includes(provider)) throw new Error("Unknown provider");
+  if (!["openai", "qwen", "gemini", "ten", "bridge", ...voicePlatforms].includes(provider)) throw new Error("Unknown provider");
   const required = {openai: ["OPENAI_API_KEY"], qwen: ["DASHSCOPE_API_KEY"],
-    gemini: ["GEMINI_API_KEY", "GEMINI_LIVE_MODEL"], ten: ["TEN_WS_URL"], bridge: ["BRIDGE_SECRET"]}[provider];
+    gemini: ["GEMINI_API_KEY", "GEMINI_LIVE_MODEL"], ten: ["TEN_WS_URL"], bridge: ["BRIDGE_SECRET"], ...platformKeys}[provider];
   for (const key of [...required, "KASAMILA_API_KEY", "KASAMILA_AVATAR_ID", "KASAMILA_MEDIA_DESCRIPTOR"]) {
     if (!process.env[key]) throw new Error("Missing server configuration: " + key);
   }
@@ -57,6 +74,19 @@ function requireConfig() {
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, origin);
+    if (req.method === 'POST' && url.pathname === '/api/obs/scene') {
+      if (req.headers.origin !== origin) return json(res, 403, {error: 'Origin rejected'});
+      if (!process.env.OBS_WS_URL) return json(res, 409, {error: 'OBS control not configured'});
+      const {scene} = await body(req); await switchObsScene(scene); return json(res, 200, {switched: true});
+    }
+    if (await rooms.http(req, res, url)) return;
+    if (req.method === 'POST' && url.pathname === '/api/runtime-end') {
+      if (req.headers.origin !== origin) return json(res, 403, {error: 'Origin rejected'});
+      const {channel} = await body(req), state = channels.get(channel);
+      if (!state) return json(res, 200, {ended: true});
+      state.socket?.close(1000, 'Explicit end'); state.input?.end(); clearTimeout(state.timeout);
+      await releaseState(state); channels.delete(channel); return json(res, 200, {ended: true});
+    }
     if (url.pathname.startsWith("/api/bridge")) {
       if (!bridgeAuth(req)) return json(res, 401, {error: "Bridge authorization required"});
       if (req.method === "POST" && url.pathname === "/api/bridge") {
@@ -83,6 +113,9 @@ const server = createServer(async (req, res) => {
       if (req.headers.origin !== origin) return json(res, 403, {error: "Origin rejected"});
       if (channels.size >= 4) return json(res, 429, {error: "Local demo session limit"});
       requireConfig();
+      const roomKey = url.searchParams.get('room');
+      if (roomKey && !rooms.reserve(roomKey)) return json(res, 409, {error: 'Host room absent or already running'});
+      try {
       const media = JSON.parse(await readFile(resolve(root, process.env.KASAMILA_MEDIA_DESCRIPTOR), "utf8"));
       if (!media.timelineId || media.timelineId.startsWith("REPLACE")) throw new Error("Fill the real media descriptor first");
       const response = await fetch(apiBase + "/api/v1/runtime/sessions", {
@@ -99,15 +132,21 @@ const server = createServer(async (req, res) => {
       const result = await response.json();
       if (!response.ok) return json(res, response.status, {error: "Kasamila session rejected: " + (result.error?.code || response.status)});
       const channel = randomUUID(), token = result.data.client_token;
+      if (roomKey && !rooms.canBind(roomKey)) {await endLease(token); return json(res, 409, {error: 'Host disconnected during startup'});}
+      if (process.env.KASAMILA_OUTPUT_MODE === 'transparent' && result.data.output_mode !== 'transparent') {
+        await endLease(token); return json(res, 409, {error: 'Template does not offer actual transparent output'});
+      }
       const timeout = setTimeout(() => {
         const state = channels.get(channel);
         state?.socket?.close(1000, "Session expired");
-        state?.input?.end(); channels.delete(channel); void endLease(token);
+        state?.input?.end(); if (state) void releaseState(state).then(() => channels.delete(channel)).catch(() => console.error('Runtime release failed'));
       }, 600000);
       timeout.unref();
       channels.set(channel, {token, timeout});
+      if (roomKey) rooms.bindRuntime(roomKey, channel);
       return json(res, 200, {apiBase, sdk: result.data.sdk, sessionToken: token, templateMedia: media, channel,
-        provider, inputRate: provider === "openai" ? 24000 : Number(process.env.BRIDGE_INPUT_RATE || 16000)});
+        provider, inputRate: inputRates[provider] || (provider === "openai" ? 24000 : Number(process.env.BRIDGE_INPUT_RATE || 16000))});
+      } finally {if (roomKey) rooms.cancelStart(roomKey);}
     }
     if (req.method !== "GET") return json(res, 405, {error: "Method not allowed"});
     const path = resolve(root, "." + decodeURIComponent(url.pathname === "/" ? "/public/index.html" : url.pathname));
@@ -122,6 +161,7 @@ const server = createServer(async (req, res) => {
 });
 const wss = new WebSocketServer({noServer: true, maxPayload: maxBytes});
 server.on("upgrade", (req, socket, head) => {
+  if (rooms.upgrade(req, socket, head)) return;
   const url = new URL(req.url, origin), state = channels.get(url.searchParams.get("channel"));
   if (url.pathname !== "/api/provider" || req.headers.origin !== origin || !state || state.socket) {
     socket.destroy(); return;
@@ -134,13 +174,21 @@ async function connect(browser, state, channel) {
   const cleanup = () => {
     if (closed) return;
     closed = true;
-    upstream?.close(); state.input?.end(); clearTimeout(state.timeout);
-    channels.delete(channel); void endLease(state.token);
+    void upstream?.close(); state.input?.end(); clearTimeout(state.timeout);
+    void releaseState(state).then(() => channels.delete(channel)).catch(() => console.error('Runtime release failed; terminate authorized Session explicitly'));
   };
   browser.on("close", cleanup);
   browser.on("error", cleanup);
   try {
-    if (provider === "gemini") {
+    if (voicePlatforms.includes(provider)) {
+      upstream = await openVoicePlatform({provider, env: process.env, emit: event => {
+        if (closed) return;
+        if (event.type === 'ready') ready = true;
+        emit(browser, event);
+      }, onClose: () => browser.close(1011, 'Voice platform disconnected')});
+      if (closed) {void upstream.close(); return;}
+      if (provider === 'dify') {ready = true; emit(browser, {type: 'ready', inputRate: 16000});}
+    } else if (provider === "gemini") {
       const {GoogleGenAI, Modality} = await import("@google/genai");
       upstream = await new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY}).live.connect({
         model: process.env.GEMINI_LIVE_MODEL, config: {responseModalities: [Modality.AUDIO]},
@@ -183,6 +231,15 @@ async function connect(browser, state, channel) {
     browser.on("message", bytes => {
       try {
         const event = JSON.parse(bytes.toString());
+        if (voicePlatforms.includes(provider)) {
+          if (!ready || closed) return;
+          if (event.type === 'interrupt') upstream.interrupt();
+          else if (event.type === 'mic') upstream.sendMic(event);
+          else if (provider === 'dify' && event.type === 'input_end')
+            void upstream.commit(typeof event.text === 'string' ? event.text.slice(0, 4000) : undefined)
+              .catch(() => {emit(browser, {type: 'error', message: 'Dify request failed; check enabled STT/TTS and app API configuration.'});});
+          return;
+        }
         if (!ready || event.type !== "mic" || typeof event.audio !== "string") return;
         if (provider === "bridge") {
           if (state.input && !state.input.write(JSON.stringify({audio: event.audio, sampleRate: event.sampleRate}) + "\n")) browser.close(1013, "Input backpressure");
@@ -200,3 +257,14 @@ async function connect(browser, state, channel) {
 // Local starter only. Production must authenticate users before session creation,
 // authorize avatar access, use HTTPS/WSS and add per-user limits.
 server.listen(port, "127.0.0.1", () => console.log("Local realtime demo: " + origin));
+let streamlabs;
+if (process.env.STREAMLABS_SOCKET_TOKEN) {
+  void connectStreamlabs(process.env.STREAMLABS_SOCKET_TOKEN, text => rooms.broadcastAnnouncement(text))
+    .then(socket => {streamlabs = socket;}).catch(() => console.error('Optional Streamlabs integration failed'));
+}
+for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => {
+  streamlabs?.close(); rooms.close();
+  const releases = [...channels.values()].map(state => {state.socket?.close(); return releaseState(state);});
+  server.close();
+  await Promise.allSettled(releases); process.exit(0);
+});

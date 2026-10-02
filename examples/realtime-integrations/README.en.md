@@ -1,6 +1,8 @@
 [简体中文](README.md) | [English](README.en.md)
 
-# Seven realtime voice integrations · Kasamila SDK 2.1.0
+# Thirteen voice integrations and a livestream host · Kasamila SDK 2.1.0
+
+New [Grok / ElevenLabs / Vapi / Deepgram / Hume / Dify adapters](voice-platforms/README.en.md), plus a reusable [OBS / Streamlabs host](obs-streamlabs/README.en.md). Video-call UI: `/public/video-call.html`; host controller: `/public/studio.html`. Additional PROVIDER values: `grok|elevenlabs|vapi|deepgram|hume|dify`; backend setup is in `.env.example`.
 
 This suite contains a local microphone-to-provider-to-avatar starter for OpenAI, Gemini, Qwen and TEN, browser RTC adapters for existing LiveKit/Pipecat agents, and a callback bridge for the official Doubao realtime demo. It does **not** host an LLM, speech service or agent framework for you.
 

@@ -46,3 +46,9 @@ Documentation/site changes only: **Web SDK stays 1.11.6; Runtime API contracts a
 This is a documentation/example publication, **not a new SDK binary or API release**.
 Provider-specific Gemini/GPT/LiveKit/Pipecat adapters are not yet delivered.
 Release-specific notes should identify the actual production commit and verification state; this documentation publication is not a new SDK binary.
+# 2026-10-02 — Voice agents and embeddable livestream host (examples only)
+
+- Added Grok Voice Agent, ElevenLabs Agent, existing Vapi assistant transport, Deepgram Voice Agent, Hume EVI and Dify knowledge-base speech adapters.
+- Added AI video-call customer-service UI and one OBS / Streamlabs avatar host with actual transparent-output validation, audio input, bounded FIFO, interruption, layouts, optional OBS scene RPC and explicit Runtime termination.
+- Added operator-reviewed Streamlabs events and two fifteen-locale blog tutorials with Markdown / JSON reading links.
+- SDK remains 2.1.0; no core Runtime, API or rendering release. Mocked contract tests are not credentialed vendor or OBS/Streamlabs certification.

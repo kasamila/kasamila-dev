@@ -23,6 +23,8 @@
 
 ## 内容更新约定
 
+新增 [Grok / ElevenLabs / Vapi / Deepgram / Hume EVI / Dify](../examples/realtime-integrations/voice-platforms/README.md)，复用现有 Vapi Assistant ID 与 Dify 知识库。[OBS / Streamlabs 共用主持组件](../examples/realtime-integrations/obs-streamlabs/README.md) 包含透明输出、音频输入、队列、打断、布局和结束；[两篇多语言博客](../content/blog/README.md) 提供十五种实际正文及 Markdown/JSON 阅读入口。示例目标 SDK 2.1.0，不是新的核心 SDK 发布。
+
 样例仓库保存可运行代码；本站文档解释接入流程；博客讲解应用实践；版本公告说明兼容性、验证版本和升级步骤。四者互相链接，不复制维护多套指南。
 
 本站预览免费；第三方 API/SDK Runtime 按实际运行时长计费。样例应显式结束不再使用的 Runtime 会话。

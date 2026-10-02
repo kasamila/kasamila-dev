@@ -1,6 +1,6 @@
 [简体中文](README.md) | [English](README.en.md)
 
-# 七大实时语音平台接入 · Kasamila SDK 2.1.0
+# 十三个语音平台接入与直播主持组件 · Kasamila SDK 2.1.0
 
 本目录提供 OpenAI、Gemini、Qwen、TEN 的本地麦克风 → 语音平台 → 实时数字人运行示例；LiveKit/Pipecat 为接入已有 Agent 的浏览器 RTC 适配器；豆包为官方 Demo 解包回调桥。不会替用户托管语音模型或 Agent 框架。
 
@@ -22,6 +22,11 @@ npm start
 用户麦克风只送语音系统，**仅 Agent 回复音频驱动数字人**。同一 SDK 音频时钟负责播放与口型，不能额外再放一遍声音。PCM 是单声道、小端、有符号 PCM16，不是 MP3、Opus、float32，也不带 WAV 文件头。
 
 ## 分平台说明
+
+- [新增 Grok / ElevenLabs / Vapi / Deepgram / Hume EVI / Dify](voice-platforms/README.md)
+- [OBS 浏览器源 / Streamlabs 共用主持组件](obs-streamlabs/README.md)
+- 视频客服页面：`/public/video-call.html`；直播控制台：`/public/studio.html`。
+- 新增 PROVIDER：`grok|elevenlabs|vapi|deepgram|hume|dify`；配置见 `.env.example`。
 
 - [LiveKit Agents](livekit/README.md)
 - [Pipecat](pipecat/README.md)

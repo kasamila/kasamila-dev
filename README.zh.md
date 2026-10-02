@@ -1,5 +1,7 @@
 # Kasamila developer resources
 
+新增 [Grok / ElevenLabs / 现有 Vapi 助手 / Deepgram / Hume EVI / Dify](examples/realtime-integrations/voice-platforms/README.md) 和 [OBS 浏览器源 / Streamlabs 共用主持组件](examples/realtime-integrations/obs-streamlabs/README.md)。透明画面、音频输入、队列、打断、场景与结束共用底层；[两篇博客正文](content/blog/README.md) 提供十五种语言和 Markdown 阅读入口。
+
 [English](README.md) | [简体中文](README.zh.md)
 
 Public documentation, API/SDK upgrade notes and integration examples for [Kasamila](https://www.kasamila.com/portal).

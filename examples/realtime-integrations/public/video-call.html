@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ElevenLabs + Kasamila · video-call customer service</title>
+<style>body{background:#0c1420;color:#eef6ff;font:16px system-ui;max-width:1000px;margin:30px auto;padding:20px}#avatar{height:65vh;background:#152538;border-radius:16px}button,input{padding:12px;margin:5px}#self{position:fixed;bottom:20px;right:20px;width:180px;border-radius:10px}pre{white-space:pre-wrap}progress{width:100%}</style></head><body>
+<h1>Your existing ElevenLabs agent, now with a face</h1><p>Configure PROVIDER=elevenlabs on the server. This is an AI customer-service demo, not a human video call. Same generated audio drives voice and avatar; camera preview stays local.</p>
+<button id="start">Call customer service</button><button id="interrupt" disabled>Interrupt / clear playback</button><button id="end" disabled>Hang up & end Runtime</button><button id="camera">Toggle local camera preview</button>
+<div id="avatar"></div><video id="self" muted autoplay playsinline hidden></video><progress id="loading" max="4" hidden></progress><pre id="status" role="status"></pre>
+<div id="dify" hidden><button id="record">Record question</button><button id="commit">Submit</button><input id="question"><button id="send-text">Ask Dify</button></div>
+<script type="module" src="/public/voice-app.mjs"></script></body></html>
