@@ -1,5 +1,5 @@
 import { language, localizedPortalUrl } from './i18n.js?v=20';
-import { demoText } from './demo-copy.js?v=2';
+import { demoText } from './demo-copy.js?v=3';
 import { drivePcm } from './examples/audio-bridge/bridge.mjs';
 const $=selector=>document.querySelector(selector);
 const chatPage=location.pathname.endsWith('/chat');
@@ -35,6 +35,9 @@ function controls(){
  $('#demo-start').disabled=starting||running||ending||!$('#demo-consent').checked||!$('#demo-channel').value;
  $('#demo-end').disabled=!running&&!starting;
  for(const id of ['demo-mic','demo-interrupt','demo-mute','demo-send','demo-text'])$('#'+id).disabled=!ready||ending;
+ const voiceOnly=catalog.channels.find(row=>row.id===$('#demo-channel').value)?.text_input===false;
+ for(const id of ['demo-send','demo-text'])$('#'+id).disabled=!ready||ending||voiceOnly;
+ $('#demo-channel-note').hidden=!voiceOnly;$('#demo-channel-note').textContent=demoText('voiceOnly');
  for(const id of ['demo-avatar','demo-channel','demo-consent'])$('#'+id).disabled=running||starting||ending;
 }
 function bubble(role,text=''){
@@ -107,6 +110,7 @@ async function start(){
  }catch{if(attempt===version)await end(demoText('failed'));}
 }
 $('#demo-avatar').addEventListener('change',renderChannels);$('#demo-consent').addEventListener('change',controls);
+$('#demo-channel').addEventListener('change',controls);
 $('#demo-start').addEventListener('click',start);$('#demo-end').addEventListener('click',()=>void end());$('#demo-interrupt').addEventListener('click',interrupt);
 $('#demo-mute').addEventListener('click',()=>{muted=!muted;stopAudio();$('#demo-mute').textContent=demoText(muted?'unmute':'mute');$('#demo-mute').setAttribute('aria-pressed',String(muted));});
 $('#demo-mic').addEventListener('click',async()=>{

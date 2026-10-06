@@ -1,5 +1,6 @@
 """Vendor transports for the realtime chat example. No Kasamila SDK internals."""
 import base64
+import asyncio
 import gzip
 import json
 import struct
@@ -58,6 +59,12 @@ class VoiceTransport:
         self.active_response = None
         self.blocked_response = None
         self.doubao_restarting = False
+        self.doubao_duplex = self.provider == "doubao" and (self.model == "1.2.6.1" or "/duplex/" in self.endpoint)
+        self.doubao_muted = False
+        self.doubao_session_created = False
+        self.doubao_reading = False
+        self.doubao_closed = asyncio.Event()
+        self.doubao_next_audio_at = 0
 
     async def connect(self):
         # Imported lazily; the existing Portal can run without the demo dependency.
@@ -76,9 +83,18 @@ class VoiceTransport:
         elif self.provider in ("openai", "qwen", "grok"):
             url += "?" + urlencode({"model": self.model})
         elif self.provider == "doubao":
-            headers = {"X-Api-App-ID": self.channel["app_id"], "X-Api-Access-Key": key,
-                       "X-Api-App-Key": self.channel["app_key"], "X-Api-Resource-Id": self.channel["resource_id"],
+            if self.doubao_duplex and self.model != "1.2.6.1":
+                raise ProviderSetupError("demo_model_invalid")
+            auth = self.channel.get("doubao_auth", "auto")
+            if auth == "api_key" or auth == "auto" and self.doubao_duplex:
+                headers = {"X-Api-Key": key, "X-Api-Connect-Id": self.session_id}
+            else:
+                headers = {"X-Api-App-ID": self.channel["app_id"], "X-Api-Access-Key": key,
+                       "X-Api-App-Key": "PlgvMymc7f3tQnJ6" if self.doubao_duplex else self.channel["app_key"],
+                       "X-Api-Resource-Id": self.channel["resource_id"],
                        "X-Api-Connect-Id": str(uuid.uuid4())}
+                if self.doubao_duplex:
+                    headers["X-Api-Request-Id"] = str(uuid.uuid4())
         try:
             self.ws = await connect(url, additional_headers=headers, open_timeout=15, max_size=2**21,
                                     ping_interval=20, close_timeout=3, proxy=None)
@@ -109,10 +125,17 @@ class VoiceTransport:
                 "modalities": ["text", "audio"], "voice": self.voice, "input_audio_format": "pcm",
                 "output_audio_format": "pcm", "turn_detection": {"type": "server_vad"},
                 "input_audio_transcription": {"model": "qwen3-asr-flash-realtime"}}})
+        elif self.doubao_duplex:
+            await self.send({"type": "session.create", "session": {"model": self.model, "instructions": self.instructions,
+                "audio": {"input": {"format": {"type": "pcm", "rate": 16000}},
+                          "output": {"format": {"type": "pcm_s16le", "rate": 24000}, "voice": self.voice}}},
+                "extension": {"dialog": {"extra": {"strict_audit": True}}, "extra": {"enable_proactive_speak": False}}})
         else:
             await self.ws.send(doubao_frame(1, {}))
 
     async def send(self, value):
+        if self.doubao_duplex:
+            value = {"event_id": str(uuid.uuid4()), **value}
         await self.ws.send(json.dumps(value))
 
     async def input(self, value):
@@ -121,6 +144,9 @@ class VoiceTransport:
             if self.provider == "gemini":
                 # A new activity interrupts current generation in the Live API.
                 await self.send({"realtimeInput": {"text": "Stop speaking. Wait for my next message."}})
+            elif self.doubao_duplex:
+                self.blocked_response = self.active_response
+                await self.send({"type": "response.cancel"})
             elif self.provider == "doubao":
                 # Finish/restart the provider session with its existing dialog ID.
                 self.doubao_restarting = True
@@ -136,15 +162,36 @@ class VoiceTransport:
         if kind == "audio":
             if self.provider == "gemini":
                 await self.send({"realtimeInput": {"audio": {"data": value["data"], "mimeType": "audio/pcm;rate=16000"}}})
+            elif self.doubao_duplex:
+                if self.doubao_muted:
+                    await self.send({"type": "input_audio_unmute.commit"})
+                    self.doubao_muted = False
+                # Also pace older clients' 100 ms chunks as recommended 20 ms PCM16 frames.
+                pcm = base64.b64decode(value["data"], validate=True)
+                loop = asyncio.get_running_loop()
+                for offset in range(0, len(pcm), 640):
+                    delay = self.doubao_next_audio_at - loop.time()
+                    if delay > 0:
+                        await asyncio.sleep(delay)
+                    chunk = pcm[offset:offset + 640]
+                    await self.send({"type": "input_audio_buffer.append", "audio": base64.b64encode(chunk).decode()})
+                    self.doubao_next_audio_at = loop.time() + len(chunk) / 32000
             elif self.provider == "doubao":
                 await self.ws.send(doubao_frame(200, base64.b64decode(value["data"]), self.session_id, True))
             else:
                 await self.send({"type": "input_audio_buffer.append", "audio": value["data"]})
         elif kind == "audio_end":
-            if self.provider == "gemini":
+            if self.doubao_duplex and not self.doubao_muted:
+                await self.send({"type": "input_audio_buffer.commit"})
+                await self.send({"type": "input_audio_mute.commit"})
+                self.doubao_muted = True
+            elif self.provider == "gemini":
                 await self.send({"realtimeInput": {"audioStreamEnd": True}})
             # Other providers run server VAD; no artificial empty commit.
         elif kind == "text":
+            if self.doubao_duplex:
+                # speech_text_buffer.commit is specified-text synthesis, not a user query.
+                raise ValueError("Doubao full duplex accepts voice queries, not text chat")
             if self.provider == "gemini":
                 await self.send({"realtimeInput": {"text": value["text"]}})
             elif self.provider == "doubao":
@@ -155,8 +202,20 @@ class VoiceTransport:
                 await self.send({"type": "response.create"})
 
     async def events(self):
-        async for raw in self.ws:
-            if self.provider == "doubao":
+        async for event in self._events():
+            yield event
+
+    async def _events(self):
+        iterator = self.ws.__aiter__()
+        while True:
+            try:
+                self.doubao_reading = True
+                raw = await anext(iterator)
+            except StopAsyncIteration:
+                return
+            finally:
+                self.doubao_reading = False
+            if self.provider == "doubao" and not self.doubao_duplex:
                 event, payload = doubao_parse(raw)
                 if event in (50, 152):
                     await self.ws.send(doubao_frame(100, {
@@ -186,6 +245,34 @@ class VoiceTransport:
                     yield {"type": "error", "code": "provider_error"}
                 continue
             message = json.loads(raw)
+            if self.doubao_duplex:
+                kind = message.get("type", "")
+                if kind == "session.created":
+                    self.dialog_id = message.get("session", {}).get("id", "")
+                    self.doubao_session_created = True
+                    await self.send({"type": "input_audio_mute.commit"})
+                    self.doubao_muted = True
+                    yield {"type": "ready", "input_rate": self.input_rate}
+                    continue
+                if kind == "session.closed":
+                    self.doubao_closed.set()
+                    return
+                if kind in ("conversation.item.input_audio_transcription.started", "response.canceled"):
+                    canceled = self.active_response
+                    if kind == "response.canceled":
+                        canceled = message.get("response_id") or self.blocked_response or self.active_response
+                    self.blocked_response = canceled
+                    if kind == "response.canceled" and canceled != self.active_response:
+                        continue
+                    self.responding = False
+                    yield {"type": "interrupted"}
+                    continue
+                if kind == "response.output_audio.started":
+                    response_id = message.get("response_id")
+                    if response_id != self.blocked_response:
+                        self.active_response = response_id
+                        self.responding = True
+                    continue
             if self.provider == "gemini":
                 if "setupComplete" in message:
                     yield {"type": "ready", "input_rate": self.input_rate}
@@ -210,14 +297,18 @@ class VoiceTransport:
             if self.blocked_response and response_id == self.blocked_response and kind.startswith("response."):
                 continue
             if kind == "session.updated":
-                yield {"type": "ready", "input_rate": self.input_rate}
+                if not self.doubao_duplex:
+                    yield {"type": "ready", "input_rate": self.input_rate}
             elif kind in ("response.audio.delta", "response.output_audio.delta"):
                 self.item_id = message.get("item_id", self.item_id)
                 yield {"type": "audio", "data": message["delta"], "sample_rate": 24000}
             elif kind in ("response.audio_transcript.delta", "response.output_audio_transcript.delta", "response.text.delta", "response.output_text.delta"):
+                if self.doubao_duplex:
+                    self.active_response = response_id
+                    self.responding = True
                 yield {"type": "text", "delta": message.get("delta", "")}
             elif kind == "conversation.item.input_audio_transcription.completed":
-                yield {"type": "user_text", "text": message.get("transcript", "")}
+                yield {"type": "user_text", "text": message.get("transcript") or message.get("text", "")}
             elif kind == "input_audio_buffer.speech_started":
                 self.blocked_response = self.active_response
                 self.responding = False
@@ -237,4 +328,17 @@ class VoiceTransport:
 
     async def close(self):
         if self.ws:
+            if self.doubao_duplex and self.doubao_session_created and not self.doubao_closed.is_set():
+                try:
+                    await self.send({"type": "session.close"})
+                    async with asyncio.timeout(3):
+                        if self.doubao_reading:
+                            await self.doubao_closed.wait()
+                        else:
+                            while not self.doubao_closed.is_set():
+                                message = json.loads(await self.ws.recv())
+                                if message.get("type") == "session.closed":
+                                    self.doubao_closed.set()
+                except Exception:
+                    pass
             await self.ws.close()

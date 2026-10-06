@@ -22,7 +22,7 @@ DEFAULTS = {
     "gemini": ("wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent", "gemini-3.8-live", "Kore", 16000),
     "qwen": ("", "qwen3.8-omni-flash-realtime", "Tina", 16000),
     "grok": ("wss://api.x.ai/v1/realtime", "grok-voice-think-fast-2.0", "ara", 24000),
-    "doubao": ("wss://openspeech.bytedance.com/api/v3/realtime/dialogue", "1.2.1.1", "zh_female_vv_jupiter_bigtts", 16000),
+    "doubao": ("wss://openspeech.bytedance.com/api/v3/duplex/realtime/dialogue", "1.2.6.1", "zh_female_vv_uranus_bigtts", 16000),
 }
 tickets = {}
 app = FastAPI()
@@ -45,7 +45,8 @@ def page():
 def catalog():
     return {"avatars": [{"id": "demo", "name": os.getenv("AVATAR_NAME", "Mia"), "names": {}, "channels": ["voice"],
                          "poster_url": "/web/portal/media/demo-portrait-friendly-v1.webp"}],
-            "channels": [{"id": "voice", "label": PROVIDER, "provider": PROVIDER}], "max_duration_seconds": 180}
+            "channels": [{"id": "voice", "label": PROVIDER, "provider": PROVIDER,
+                          "text_input": not (PROVIDER == "doubao" and os.getenv("VOICE_MODEL", DEFAULTS["doubao"][1]) == "1.2.6.1")}], "max_duration_seconds": 180}
 
 @app.get("/portal/{page}")
 def website(page: str):
@@ -100,7 +101,7 @@ async def socket(browser: WebSocket):
         channel = {"provider": PROVIDER, "api_key": os.environ["VOICE_API_KEY"], "model": os.getenv("VOICE_MODEL", model),
                    "voice": os.getenv("VOICE_NAME", voice), "endpoint": os.getenv("VOICE_ENDPOINT", endpoint),
                    "app_id": os.getenv("DOUBAO_APP_ID", ""), "app_key": os.getenv("DOUBAO_APP_KEY", ""),
-                   "resource_id": os.getenv("DOUBAO_RESOURCE_ID", "volc.speech.dialog")}
+                   "resource_id": os.getenv("DOUBAO_RESOURCE_ID", "volc.speech.dialog"), "doubao_auth": os.getenv("DOUBAO_AUTH", "auto")}
         transport = VoiceTransport(channel, os.getenv("AGENT_INSTRUCTIONS", "You are a helpful demonstration assistant. Never request sensitive personal data.")
                                    + " Respond in language " + state["locale"], channel["voice"],
                                    {"endpoint": endpoint, "model": model, "voice": voice, "input_rate": rate})

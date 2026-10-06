@@ -18,13 +18,13 @@ python -m uvicorn server:app --host 127.0.0.1 --port 8792
 
 打开 `http://127.0.0.1:8792/portal/apps/chat`。专用 Kasamila Runtime Key 需要允许此 Origin，并有足够推理额度与并发席位。按照 `../geometry-runtime-web` 的说明配置客户自行托管的 HLS 描述符，在 `KASAMILA_MEDIA_DESCRIPTOR` 中填写其文件路径。示例不自动读取 `.env`，请使用部署环境的安全环境变量加载方式；不得提交密钥。
 
-`VOICE_PROVIDER` 可选 `openai`、`gemini`、`qwen`、`grok`、`doubao`。设置 `VOICE_API_KEY`，按需设置 `VOICE_MODEL`、`VOICE_NAME`、`VOICE_ENDPOINT` 和 `AGENT_INSTRUCTIONS`。豆包还需要 `DOUBAO_APP_ID`、`DOUBAO_APP_KEY`，并明确要求单声道 `pcm_s16le` 输出，不能将默认 float32/Opus 当作 PCM16 使用。模型、音色和访问资格以对应平台账户为准。代码通过协议测试，真实平台验收需要你自己的已开通账户。
+`VOICE_PROVIDER` 可选 `openai`、`gemini`、`qwen`、`grok`、`doubao`。设置 `VOICE_API_KEY`，按需设置 `VOICE_MODEL`、`VOICE_NAME`、`VOICE_ENDPOINT` 和 `AGENT_INSTRUCTIONS`。豆包默认升级为 3.0 全双工（模型 `1.2.6.1`、`/api/v3/duplex/realtime/dialogue`），新版语音控制台 API Key 填在 `VOICE_API_KEY`，无需 App ID / App Key；如使用旧版鉴权，设置 `DOUBAO_AUTH=legacy` 并填写 `DOUBAO_APP_ID`（3.0 的固定 App Key 自动添加；`DOUBAO_APP_KEY` 仅用于旧版二进制通道）。并明确要求单声道 `pcm_s16le` 输出，不能将默认 float32/Opus 当作 PCM16 使用。模型、音色和访问资格以对应平台账户为准。代码通过协议测试，真实平台验收需要你自己的已开通账户。
 
 ## 数据流和控制
 
-麦克风声音经应用服务器传给所选 AI 平台。AI 返回的 24 kHz 单声道 PCM16 通过现有音频桥接驱动 `setPcmStream`；OpenAI/Grok 输入为 24 kHz，Gemini/Qwen/Doubao 输入为 16 kHz。只有 AI 输出驱动数字人。界面同时显示回复文本，关闭声音后可使用文字对话。
+麦克风声音经应用服务器传给所选 AI 平台。AI 返回的 24 kHz 单声道 PCM16 通过现有音频桥接驱动 `setPcmStream`；OpenAI/Grok 输入为 24 kHz，Gemini/Qwen/Doubao 输入为 16 kHz。只有 AI 输出驱动数字人。界面同时显示回复文本。豆包 3.0 全双工支持语音提问和字幕；官方的文字提交仅用于指定文本播报，本例不将其伪装为文字问答，文字提问请选其他通道。
 
-服务器 VAD 支持自动打断；点击打断立即停止播放并取消上游回复。Gemini 通过停止说话指令实现主动打断，豆包会用原 dialog ID 结束并重启语音会话。这些平台差异需要真实账户验收。
+服务器 VAD 支持自动打断；点击打断立即停止播放并取消上游回复。Gemini 通过停止说话指令实现主动打断，豆包 3.0 使用原生 `response.cancel`，通过 ASR started 自动清空播放，关闭/恢复麦克风使用静音/取消静音事件，输出采用 24kHz PCM16；关闭时发送 `session.close` 并等待确认。旧版二进制通道仍兼容。这些平台差异需要真实账户验收。
 
 永久平台密钥和 Runtime Key 保留在服务器。浏览器使用单次票据，在 WebSocket 第一帧发送，不放在 URL 中。会话三分钟后关闭，并调用 Runtime `sessions/end`；离开页面时销毁 SDK player。本例不保存对话，各 AI 平台有独立的数据保留政策，请勿输入敏感信息。
 

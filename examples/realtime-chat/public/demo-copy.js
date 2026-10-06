@@ -18,6 +18,24 @@ hi:['ऐप डेमो','बिना लॉगिन वास्तविक
 id:['Demo aplikasi','Coba Kasamila dalam aplikasi nyata tanpa login.','Tersedia','Obrolan avatar langsung','Pilih avatar dan layanan suara. Bicara, mengetik, dan interupsi kapan saja.','Coba sekarang →','Segera hadir','Avatar berbincang di siaran langsung dan menjawab penonton.','Belanja langsung','Jelajahi presentasi produk dan pertanyaan pembeli.','← Semua aplikasi','Avatar','Saluran suara','Saya setuju mengirim teks dan suara melalui server demo ke layanan AI pilihan. Demo tidak menyimpan percakapan. Hindari informasi sensitif.','Kebijakan privasi','Mulai obrolan','Akhiri obrolan','Aktifkan mikrofon','Interupsi','Bisukan','Ketik pesan','Kirim','Jawaban AI hanya untuk demo. Sesi berakhir otomatis. Bahasa dan suara bergantung pada layanan.','Tidak ada demo tersedia. Coba lagi nanti.','Menghubungkan…','Terhubung','Koneksi gagal. Coba lagi atau ganti saluran.','Sesi berakhir','Nonaktifkan mikrofon','Aktifkan suara'],
 };
 export const demoCatalogs = Object.fromEntries(Object.entries(rows).map(([locale,row])=>[locale,Object.fromEntries(keys.map((key,index)=>[key,row[index]]))]));
+const voiceOnlyRows={
+ zh:'此通道支持语音对话和文字字幕。请开启麦克风；文字提问请切换其他通道。',
+ en:'This channel supports voice conversations and text captions. Enable the microphone, or choose another channel to type questions.',
+ fr:'Ce canal propose la conversation vocale et les sous-titres. Activez le micro ou changez de canal pour écrire vos questions.',
+ de:'Dieser Kanal bietet Sprachgespräche und Textuntertitel. Mikrofon aktivieren oder für Textfragen einen anderen Kanal wählen.',
+ ru:'Этот канал поддерживает голосовой диалог и субтитры. Включите микрофон или выберите другой канал для текстовых вопросов.',
+ es:'Este canal ofrece conversaciones de voz y subtítulos. Activa el micrófono o elige otro canal para escribir preguntas.',
+ it:'Questo canale offre conversazioni vocali e sottotitoli. Attiva il microfono o scegli un altro canale per le domande scritte.',
+ ar:'تدعم هذه القناة المحادثة الصوتية والنص المصاحب. فعّل الميكروفون أو اختر قناة أخرى لكتابة الأسئلة.',
+ ja:'このチャンネルは音声会話と字幕に対応しています。マイクを有効にしてください。文字で質問する場合は別のチャンネルを選んでください。',
+ ko:'이 채널은 음성 대화와 자막을 지원합니다. 마이크를 켜거나 문자로 질문하려면 다른 채널을 선택하세요.',
+ th:'ช่องนี้รองรับการสนทนาด้วยเสียงและคำบรรยาย โปรดเปิดไมโครโฟนหรือเลือกช่องอื่นเพื่อพิมพ์คำถาม',
+ ms:'Saluran ini menyokong perbualan suara dan sari kata. Aktifkan mikrofon atau pilih saluran lain untuk menaip soalan.',
+ vi:'Kênh này hỗ trợ hội thoại bằng giọng nói và phụ đề. Bật micrô hoặc chọn kênh khác để nhập câu hỏi.',
+ hi:'यह चैनल आवाज़ में बातचीत और टेक्स्ट कैप्शन देता है। माइक्रोफ़ोन चालू करें या प्रश्न टाइप करने के लिए दूसरा चैनल चुनें।',
+ id:'Saluran ini mendukung percakapan suara dan teks transkrip. Aktifkan mikrofon atau pilih saluran lain untuk mengetik pertanyaan.',
+};
+for(const [locale,text] of Object.entries(voiceOnlyRows))demoCatalogs[locale].voiceOnly=text;
 const errorKeys=['demo_qwen_workspace_required','demo_model_invalid','demo_provider_auth','demo_provider_access','demo_provider_quota'];
 const errorRows={
  zh:['Qwen 通道需要配置工作空间专属地址，请选择其他通道。','所选通道的模型配置无效，请选择其他通道。','所选平台鉴权失败，请选择其他通道。','所选平台尚未授权此模型或工作空间，请选择其他通道。','所选平台额度或并发已达上限，请稍后再试。'],
