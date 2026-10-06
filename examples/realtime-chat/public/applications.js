@@ -1,5 +1,5 @@
 import { language, localizedPortalUrl } from './i18n.js?v=20';
-import { demoText } from './demo-copy.js?v=1';
+import { demoText } from './demo-copy.js?v=2';
 import { drivePcm } from './examples/audio-bridge/bridge.mjs';
 const $=selector=>document.querySelector(selector);
 const chatPage=location.pathname.endsWith('/chat');
@@ -92,7 +92,7 @@ async function start(){
    try{
     const message=JSON.parse(event.data);
     if(message.type==='ready'){clearTimeout(startupTimeout);ready=true;running=true;starting=false;inputRate=message.input_rate;status(demoText('connected'));controls();timeout=setTimeout(()=>void end(),result.duration*1000);}
-    else if(message.type==='error'){void end(demoText('failed'));}
+    else if(message.type==='error'){void end(demoText(message.code||'failed'));}
     else if(message.type==='interrupted'){stopAudio();}
     else if(message.type==='user_text'&&message.text){bubble('user',message.text);}
     else if(message.type==='text'&&message.delta){output=output||bubble('assistant');output.textContent+=message.delta;$('#demo-history').scrollTop=$('#demo-history').scrollHeight;}

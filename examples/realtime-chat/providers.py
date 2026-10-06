@@ -6,6 +6,11 @@ import struct
 import uuid
 from urllib.parse import urlencode
 
+class ProviderSetupError(Exception):
+    def __init__(self, code):
+        self.code = code
+        super().__init__(code)
+
 def doubao_frame(event, payload, session_id="", audio=False):
     body = gzip.compress(payload if audio else json.dumps(payload).encode())
     header = bytes([0x11, 0x24 if audio else 0x14, 0x01 if audio else 0x11, 0])
@@ -60,17 +65,27 @@ class VoiceTransport:
         key = self.channel["api_key"]
         headers = {"Authorization": "Bearer " + key}
         url = self.endpoint
+        if self.provider == "qwen":
+            if not self.model.startswith("qwen"):
+                raise ProviderSetupError("demo_model_invalid")
+            if self.model.startswith("qwen3.8-") and not url.endswith(".maas.aliyuncs.com/api-ws/v1/realtime"):
+                raise ProviderSetupError("demo_qwen_workspace_required")
         if self.provider == "gemini":
             url += "?" + urlencode({"key": key})
             headers = {}
-        elif self.provider in ("openai", "qwen"):
+        elif self.provider in ("openai", "qwen", "grok"):
             url += "?" + urlencode({"model": self.model})
         elif self.provider == "doubao":
             headers = {"X-Api-App-ID": self.channel["app_id"], "X-Api-Access-Key": key,
                        "X-Api-App-Key": self.channel["app_key"], "X-Api-Resource-Id": self.channel["resource_id"],
                        "X-Api-Connect-Id": str(uuid.uuid4())}
-        self.ws = await connect(url, additional_headers=headers, open_timeout=15, max_size=2**21,
-                                ping_interval=20, close_timeout=3, proxy=None)
+        try:
+            self.ws = await connect(url, additional_headers=headers, open_timeout=15, max_size=2**21,
+                                    ping_interval=20, close_timeout=3, proxy=None)
+        except Exception as error:
+            status = getattr(getattr(error, "response", None), "status_code", None)
+            code = {401: "demo_provider_auth", 403: "demo_provider_access", 404: "demo_model_invalid", 429: "demo_provider_quota"}.get(status, "demo_connection_failed")
+            raise ProviderSetupError(code) from None
         if self.provider == "gemini":
             await self.send({"setup": {"model": "models/" + self.model.removeprefix("models/"),
                 "generationConfig": {"responseModalities": ["AUDIO"], "speechConfig": {

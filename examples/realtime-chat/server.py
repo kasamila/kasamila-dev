@@ -18,10 +18,10 @@ ORIGIN = os.getenv("APP_ORIGIN", "http://127.0.0.1:8792")
 API = os.getenv("KASAMILA_API_BASE", "https://www.kasamila.com").rstrip("/")
 PROVIDER = os.getenv("VOICE_PROVIDER", "openai")
 DEFAULTS = {
-    "openai": ("wss://api.openai.com/v1/realtime", "gpt-realtime", "marin", 24000),
-    "gemini": ("wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent", "gemini-3.1-flash-live-preview", "Kore", 16000),
-    "qwen": ("wss://dashscope.aliyuncs.com/api-ws/v1/realtime", "qwen3-omni-flash-realtime", "Cherry", 16000),
-    "grok": ("wss://api.x.ai/v1/realtime", "", "Ara", 24000),
+    "openai": ("wss://api.openai.com/v1/realtime", "gpt-realtime-2.1", "marin", 24000),
+    "gemini": ("wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent", "gemini-3.8-live", "Kore", 16000),
+    "qwen": ("", "qwen3.8-omni-flash-realtime", "Tina", 16000),
+    "grok": ("wss://api.x.ai/v1/realtime", "grok-voice-think-fast-2.0", "ara", 24000),
     "doubao": ("wss://openspeech.bytedance.com/api/v3/realtime/dialogue", "1.2.1.1", "zh_female_vv_jupiter_bigtts", 16000),
 }
 tickets = {}

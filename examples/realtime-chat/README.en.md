@@ -35,3 +35,5 @@ This loopback starter does not include public-hosting abuse controls or a creden
 - [Qwen Realtime events](https://www.alibabacloud.com/help/en/model-studio/client-events)
 - [Grok voice](https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech)
 - [Doubao realtime protocol](https://www.volcengine.com/docs/6561/1594356)
+
+Qwen 3.8 requires `VOICE_ENDPOINT=wss://WORKSPACE_ID.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime` (Beijing), or the Singapore `ap-southeast-1` domain. The default model is `qwen3.8-omni-flash-realtime` and voice is `Tina`. The API key must have access to that workspace.

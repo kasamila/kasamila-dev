@@ -31,3 +31,5 @@ python -m uvicorn server:app --host 127.0.0.1 --port 8792
 此本地启动器不包含公开托管的防滥用机制或凭据管理界面。官网实现提供管理员加密配置、已发布公共模板白名单、每 IP 访问限制和专用 Runtime Key 并发约束。公开部署此样例前应加入同等控制。人设与护栏是模型指令，不保证内容过滤；应按业务场景验证。
 
 官方协议链接见英文说明。官网管理员从 Admin 的“应用演示管理”入口设置公开数字人、名字、人设、护栏、各通道音色、模型、凭据与会话限额；只有 superadmin 能保存。
+
+Qwen 3.8 需要 `VOICE_ENDPOINT=wss://工作空间ID.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime`（北京），或新加坡 `ap-southeast-1` 域名；默认模型 `qwen3.8-omni-flash-realtime`，默认音色 `Tina`。密钥必须具有对应工作空间权限。
