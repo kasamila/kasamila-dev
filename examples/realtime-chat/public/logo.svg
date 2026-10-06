@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="stemGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00C6FF" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#0072FF" stop-opacity="0.95" />
+    </linearGradient>
+    
+    <linearGradient id="topArmGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F77062" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#FE5196" stop-opacity="0.85" />
+    </linearGradient>
+    
+    <linearGradient id="bottomArmGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B14BF4" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#4A00E0" stop-opacity="0.85" />
+    </linearGradient>
+    
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00C6FF" />
+      <stop offset="50%" stop-color="#B14BF4" />
+      <stop offset="100%" stop-color="#FE5196" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(0, -20)">
+      <line x1="180" y1="260" x2="310" y2="390" stroke="url(#bottomArmGrad)" stroke-width="55" stroke-linecap="round" />
+
+      <line x1="180" y1="250" x2="310" y2="120" stroke="url(#topArmGrad)" stroke-width="55" stroke-linecap="round" />
+
+      <line x1="150" y1="110" x2="150" y2="390" stroke="url(#stemGrad)" stroke-width="60" stroke-linecap="round" />
+
+      <circle cx="345" cy="85" r="28" fill="#FE5196" opacity="0.9" />
+  </g>
+
+  <text x="250" y="465" font-family="'Montserrat', 'Segoe UI', Arial, sans-serif" font-size="36" font-weight="900" fill="url(#textGrad)" letter-spacing="12" text-anchor="middle">KASAMILA</text>
+  
+  <text x="250" y="490" font-family="'Montserrat', 'Segoe UI', Arial, sans-serif" font-size="12" font-weight="600" fill="#888888" letter-spacing="6" text-anchor="middle">DIGITAL HUMAN AGENT</text>
+</svg>

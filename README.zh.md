@@ -71,3 +71,8 @@ License: existing [Apache-2.0](LICENSE); external dependencies retain their own 
 默认 pinned。服务器新版本不会热替换活动会话或强迫固定版本客户升级。
 
 - [SDK 2.1 加密 Runtime / AILIVE 升级](docs/sdk_2_1_protected_runtime.md)
+
+
+## 应用展示
+
+[无需登录体验官网应用展示](https://www.kasamila.com/portal/apps)。[运行实时聊天样例](examples/realtime-chat/README.md)，接入 OpenAI、Gemini、Qwen、Grok 或豆包。

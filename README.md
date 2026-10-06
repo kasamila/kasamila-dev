@@ -76,3 +76,8 @@ License: [Apache-2.0](LICENSE); external dependencies retain their own licenses.
 Pinned is the default. New stable releases do not hot-swap active sessions or force pinned integrations to upgrade.
 
 - [SDK 2.1 encrypted Runtime / AILIVE upgrade](docs/sdk_2_1_protected_runtime.en.md)
+
+
+## Application demos
+
+[Try the anonymous website demo](https://www.kasamila.com/portal/apps). [Run the realtime chat example](examples/realtime-chat/README.en.md) with OpenAI, Gemini, Qwen, Grok or Doubao.
