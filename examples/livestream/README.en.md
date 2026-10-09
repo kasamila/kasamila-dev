@@ -30,6 +30,8 @@ http://127.0.0.1:8877/portal/apps/live/obs#room=demo&token=<SOURCE_TOKEN>
 
 Use 1920×1080, enable **Control audio via OBS**, and disable **Shutdown source when not visible**. OBS handles streaming to YouTube/Twitch. Fragments do not enter HTTP access logs; the whole source URL grants control and must remain private. Bind this development server to loopback only.
 
+The source renews before Runtime expiry, keeps the last frame with alpha during replacement, and restores animation after the new player has painted. Event polling stays online. Qwen connects only while generating a reply and closes afterwards; idle chat sends no silence, while text-only replies still consume text tokens. For YouTube, select YouTube–RTMPS in OBS and use the Studio server and stream key. Successful OAuth does not mean video has reached YouTube: health `noData` calls for checking encoder network access and ingest settings.
+
 ## Behavior and limits
 
 - Filters duplicates, bot echoes, commands, emote-only messages, links, repeated characters, flooding and configured blocked terms.
