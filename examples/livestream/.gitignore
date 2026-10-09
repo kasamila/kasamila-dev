@@ -1,0 +1,5 @@
+.env
+platform-token.json
+template-media.json
+__pycache__/
+.venv/
