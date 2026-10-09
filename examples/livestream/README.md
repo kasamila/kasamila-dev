@@ -18,6 +18,8 @@ uvicorn server:app --host 127.0.0.1 --port 8877
 
 在平台开发者控制台注册 `.env` 的 `OAUTH_CALLBACK`。Twitch 使用 `user:read:chat user:write:chat`；YouTube 使用 `https://www.googleapis.com/auth/youtube.force-ssl`，需要启用 YouTube Data API v3，并按 Google 的要求配置 OAuth 同意屏幕/测试用户或验证。运行 `authorize.py` 时必须使用目标直播频道的所有者账号。两个平台的凭据不同；每个本地实例负责一个直播间。
 
+YouTube 的 API 启用和 OAuth 客户端必须在同一个 Google Cloud 项目；在 Google Auth Platform 的“数据访问”中添加上述范围。添加测试用户后仍需启用 API 并同意请求权限。样例区分 API 未启用、权限不足、频道缺失以及 OAuth 凭据/授权码/回调错误；诊断日志仅保留安全的错误类型，不输出密钥、授权码或上游响应正文。
+
 `QWEN_ENDPOINT` 使用自己的北京/新加坡工作空间专属 WSS；默认模型为 `qwen3.8-omni-flash-realtime`。`KASAMILA_MEDIA_DESCRIPTOR` 指向自己的模板媒体描述文件，参照相邻 `geometry-runtime-web` 样例；Runtime Key 必须允许 `DEMO_ORIGIN`、该模板及所需额度/并发席位。
 
 生成一个至少 20 字符的随机 `SOURCE_TOKEN`。在 OBS 添加浏览器源：

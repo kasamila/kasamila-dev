@@ -18,6 +18,8 @@ uvicorn server:app --host 127.0.0.1 --port 8877
 
 Register `OAUTH_CALLBACK` with the platform app. Twitch requests `user:read:chat user:write:chat`; YouTube requests `https://www.googleapis.com/auth/youtube.force-ssl`. Enable YouTube Data API v3 and configure Google consent, test users or verification as required. Authorize the actual channel owner. Each local instance manages one stream, with separate credentials for each platform.
 
+Enable the API in the OAuth client's own Google Cloud project and add that scope under Google Auth Platform Data Access. Adding test users does not replace API enablement or granting permissions. The adapter distinguishes disabled API, insufficient scope, missing channel, and OAuth client/code/callback errors. Diagnostic logs include only safe error categories, never credentials, authorization codes or upstream response bodies.
+
 Configure your Beijing/Singapore workspace WSS in `QWEN_ENDPOINT`; the default model is `qwen3.8-omni-flash-realtime`. Supply your own template media descriptor via `KASAMILA_MEDIA_DESCRIPTOR`, following the adjacent `geometry-runtime-web` example. Your Runtime Key must allow the chosen template and `DEMO_ORIGIN`, and have sufficient quota and concurrency.
 
 Set a random `SOURCE_TOKEN` of at least 20 characters. Add this OBS Browser Source:

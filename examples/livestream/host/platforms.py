@@ -1,5 +1,6 @@
 """YouTube/Twitch OAuth and chat adapters. Tokens never leave the server."""
 import asyncio
+import logging
 import time
 from urllib.parse import urlencode, urlsplit
 
@@ -9,6 +10,19 @@ YOUTUBE = "https://www.googleapis.com/youtube/v3/"
 TWITCH = "https://api.twitch.tv/helix/"
 SCOPES = {"youtube": "https://www.googleapis.com/auth/youtube.force-ssl",
           "twitch": "user:read:chat user:write:chat"}
+logger = logging.getLogger(__name__)
+GOOGLE_ERRORS = {
+    "invalid_client": "live_oauth_client_invalid",
+    "unauthorized_client": "live_oauth_client_invalid",
+    "invalid_grant": "live_oauth_code_invalid",
+    "redirect_uri_mismatch": "live_oauth_redirect_invalid",
+    "accessNotConfigured": "live_youtube_api_disabled",
+    "SERVICE_DISABLED": "live_youtube_api_disabled",
+    "insufficientPermissions": "live_youtube_permissions_required",
+    "ACCESS_TOKEN_SCOPE_INSUFFICIENT": "live_youtube_permissions_required",
+    "youtubeSignupRequired": "live_youtube_channel_required",
+    "authenticatedUserNotChannel": "live_youtube_channel_required",
+}
 
 
 class PlatformError(Exception):
@@ -24,11 +38,20 @@ async def request(method, url, **kwargs):
         retry = response.headers.get("Retry-After", "")
         reset = response.headers.get("Ratelimit-Reset", "")
         wait = float(retry) if retry.isdigit() else max(1, float(reset) - time.time()) if reset.isdigit() else 30
-        if url.startswith(YOUTUBE):
+        google = url.startswith(YOUTUBE) or url == "https://oauth2.googleapis.com/token"
+        if google:
             try:
-                reason = response.json().get("error", {}).get("errors", [{}])[0].get("reason", "")
-            except (ValueError, IndexError):
+                error = response.json().get("error", {})
+                reasons = [error] if isinstance(error, str) else [item.get("reason", "") for item in error.get("errors", []) + error.get("details", [])]
+                reasons = [value for value in reasons if isinstance(value, str)]
+                reason = next((value for value in reasons if value in GOOGLE_ERRORS), reasons[0] if reasons else "")
+            except (ValueError, TypeError, AttributeError, IndexError):
                 reason = ""
+            # Never log response bodies/descriptions, codes, tokens, or request URLs.
+            safe_reason = reason if reason in GOOGLE_ERRORS or reason in ("quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded", "userRequestsExceedRateLimit", "liveChatEnded", "liveChatDisabled", "liveChatNotFound", "forbidden") else "unclassified"
+            logger.warning("Portal livestream Google error service=%s status=%s reason=%s", "youtube" if url.startswith(YOUTUBE) else "oauth", response.status_code, safe_reason)
+            if reason in GOOGLE_ERRORS:
+                raise PlatformError(GOOGLE_ERRORS[reason])
             if reason in ("quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded", "userRequestsExceedRateLimit"):
                 raise PlatformError("live_platform_limited", 3600 if reason in ("quotaExceeded", "dailyLimitExceeded") else wait)
             if reason in ("liveChatEnded", "liveChatDisabled", "liveChatNotFound"):
