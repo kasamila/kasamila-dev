@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-This example consumes the published Kasamila Runtime API/SDK without modifying API, SDK or geometry code. YouTube uses Live Chat polling with `pollingIntervalMillis` and `nextPageToken`; Twitch uses EventSub WebSockets and Send Chat Message. Valid comments are submitted as text to Qwen realtime.
+This example consumes the published Kasamila Runtime API/SDK without modifying API, SDK or geometry code. YouTube uses the official gRPC `liveChatMessages.streamList` connection with `nextPageToken` for reconnects; Twitch uses EventSub WebSockets and Send Chat Message. Valid comments are submitted as text to Qwen realtime.
 
 ## Run locally
 
@@ -34,6 +34,8 @@ The source renews before Runtime expiry, keeps the last frame with alpha during 
 
 ## Behavior and limits
 
+YouTube keeps one TLS connection to `youtube.googleapis.com:443` while idle, resumes completed batches after disconnects, and reconnects before OAuth expiry. `grpcio` and `protobuf` are installed with this sample's requirements; no generated Google SDK or protoc build is required. The small protobuf wire contract in `host/youtube_stream.py` follows the official schema and ignores unused fields. Initial history is filtered by publish time, including multi-batch history. Partially consumed batches may be redelivered and are deduplicated. OBS release cancels the RPC/channel. There is no REST polling fallback. Reads and text sends still consume YouTube quota.
+
 - Filters duplicates, bot echoes, commands, emote-only messages, links, repeated characters, flooding and configured blocked terms.
 - Each accepted comment receives a platform text reply with `@username`. Low traffic receives spoken replies for each comment; busy chat selects questions with viewer fairness and an interval. OBS acknowledges playback to prevent overlapping speech.
 - Remembers the last four turns independently per viewer for 30 minutes by default. Memory is cleared when the stream session ends. Reconnects do not promise persistent memory across streams.
@@ -43,4 +45,4 @@ The source renews before Runtime expiry, keeps the last frame with alpha during 
 
 Hosted Portal credentials are configured through **Admin → Application demos → Livestream demos**. Environment variables are only for this standalone sample. The hosted version adds Admin authentication, CSRF, encrypted token storage, same-origin checks, single-source OBS ownership and source revocation.
 
-Official protocols: [YouTube list](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/list), [YouTube insert](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/insert), [Twitch chat](https://dev.twitch.tv/docs/chat/send-receive-messages/), [EventSub WebSockets](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/), [Qwen client events](https://help.aliyun.com/en/model-studio/client-events).
+Official protocols: [YouTube streamList](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/streamList), [gRPC contract](https://developers.google.com/youtube/v3/live/streaming-live-chat), [YouTube insert](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/insert), [Twitch chat](https://dev.twitch.tv/docs/chat/send-receive-messages/), [EventSub WebSockets](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/), [Qwen client events](https://help.aliyun.com/en/model-studio/client-events).

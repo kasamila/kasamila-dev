@@ -2,6 +2,8 @@
 import asyncio
 import logging
 import time
+from datetime import datetime
+from contextlib import aclosing
 from urllib.parse import urlencode, urlsplit
 
 import httpx
@@ -102,7 +104,7 @@ class ChatPlatform:
         self.last_sent = 0
         self.send_lock = asyncio.Lock()
         self.page_token = None
-        self.youtube_primed = False
+        self.youtube_since = None
 
     async def headers(self):
         async with self.lock:
@@ -131,7 +133,10 @@ class ChatPlatform:
             rows = value.get("items", [])
             if not rows or owner and rows[0]["snippet"]["channelId"] != self.token["user_id"]:
                 raise PlatformError("live_owner_mismatch")
-            self.live_chat_id = rows[0].get("liveStreamingDetails", {}).get("activeLiveChatId")
+            chat_id = rows[0].get("liveStreamingDetails", {}).get("activeLiveChatId")
+            if chat_id != self.live_chat_id:
+                self.page_token, self.youtube_since = None, None
+            self.live_chat_id = chat_id
             if not self.live_chat_id:
                 raise PlatformError("live_room_offline")
         else:
@@ -169,21 +174,9 @@ class ChatPlatform:
         if not (self.live_chat_id or self.broadcaster_id):
             await self.resolve(owner=True)
         if self.room["platform"] == "youtube":
-            while True:
-                params = {"part": "id,snippet,authorDetails", "liveChatId": self.live_chat_id, "maxResults": 200}
-                if self.page_token:
-                    params["pageToken"] = self.page_token
-                value = await request("GET", YOUTUBE + "liveChat/messages", headers=await self.headers(), params=params)
-                # Prime the cursor without replaying old chat on OBS reconnect.
-                for item in value.get("items", []):
-                    if self.youtube_primed and item["snippet"]["type"] == "textMessageEvent":
-                        author = item["authorDetails"]
-                        yield {"id": item["id"], "user_id": author["channelId"], "name": author["displayName"],
-                               "text": item["snippet"].get("textMessageDetails", {}).get("messageText", "")}
-                self.youtube_primed, self.page_token = True, value.get("nextPageToken")
-                if value.get("offlineAt"):
-                    raise PlatformError("live_room_offline")
-                await asyncio.sleep(max(1, value.get("pollingIntervalMillis", 5000) / 1000))
+            async with aclosing(self._youtube_messages()) as stream:
+                async for item in stream:
+                    yield item
         else:
             from websockets.asyncio.client import connect
             url, migrated = "wss://eventsub.wss.twitch.tv/ws", False
@@ -219,3 +212,42 @@ class ChatPlatform:
                         raise PlatformError("live_auth_required")
             finally:
                 await ws.close()
+
+    async def _youtube_messages(self):
+        from .youtube_stream import stream_pages, StreamError
+        if self.youtube_since is None:
+            self.youtube_since = time.time()
+        delay, refreshed = 2, False
+        while True:
+            headers = await self.headers()
+            # Reconnect with the cursor before the OAuth token expires. There is
+            # no periodic list request while the stream is idle.
+            lifetime = max(1, min(3000, self.token["expires_at"] - time.time() - 60))
+            pages = stream_pages(headers, self.live_chat_id, self.page_token, lifetime)
+            try:
+                async for page in pages:
+                    delay, refreshed = 2, False
+                    for item in page["items"]:
+                        try:
+                            published = datetime.fromisoformat(item["published_at"].replace("Z", "+00:00"))
+                            if published.tzinfo is None or published.timestamp() < self.youtube_since:
+                                continue
+                        except (ValueError, KeyError):
+                            continue
+                        yield {key: item[key] for key in ("id", "user_id", "name", "text")}
+                    # Advance only after the entire batch has been handed off.
+                    # A mid-batch retry may redeliver IDs; ChatPolicy deduplicates.
+                    self.page_token = page["nextPageToken"] or self.page_token
+                    if page.get("offlineAt") or page.get("ended"):
+                        raise PlatformError("live_room_offline")
+            except StreamError as error:
+                if error.code == "live_auth_required" and not refreshed:
+                    self.token["expires_at"] = 0
+                    refreshed = True
+                    continue
+                if error.code != "live_stream_reconnect":
+                    raise PlatformError(error.code, error.retry_after) from None
+            finally:
+                await pages.aclose()
+            await asyncio.sleep(delay)
+            delay = min(30, delay * 2)

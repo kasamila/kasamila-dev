@@ -1,6 +1,8 @@
 # YouTube / Twitch 数字人直播样例
 
-本样例复用 Kasamila **现有发布的 Runtime API/SDK**，不修改 SDK、几何或 API 服务。YouTube 使用 Live Chat API（按 `pollingIntervalMillis` 和 `nextPageToken` 轮询）；Twitch 使用 EventSub WebSocket 与 Send Chat Message API。有效消息通过文本提交给 Qwen 端到端实时模型。
+本样例复用 Kasamila **现有发布的 Runtime API/SDK**，不修改 SDK、几何或 API 服务。YouTube 使用官方 gRPC `liveChatMessages.streamList` 长连接推送，断线后通过 `nextPageToken` 续接；Twitch 使用 EventSub WebSocket 与 Send Chat Message API。有效消息通过文本提交给 Qwen 端到端实时模型。
+
+YouTube 空闲时保持到 `youtube.googleapis.com:443` 的 TLS 长连接，不再定时轮询弹幕列表。连接在 OAuth 到期前续接；授权被拒绝时尝试刷新一次，临时网络错误按退避重连。游标在整批消息交付后更新，部分批次重放由现有弹幕策略按 ID 去重；初始历史按发布时间过滤，OBS 释放时关闭 RPC 和连接。依赖 `grpcio`、`protobuf` 已列入本样例 requirements，无需生成 Google SDK 或运行 protoc；`host/youtube_stream.py` 的精简字段定义遵循[官方协议](https://developers.google.com/youtube/v3/live/streaming-live-chat)。不回退到 REST 轮询。读取弹幕和发送文字回复仍消耗 YouTube 配额。
 
 [English](README.en.md)
 
