@@ -75,3 +75,7 @@ CLI 从服务器环境变量 `SHOPIFY_ACCESS_TOKEN` 读取已有店主授权得�
 目录在后台刷新；对话每次最多批量读取 3 个候选商品，已核验结果短缓存 20 秒，按商店、国家、语言及 webhook 版本隔离。模型接收精简事实，减少重复工具调用。商品详情和购物车仍实时核验，不使用短缓存。Admin 复制的挂件与主题 block 都支持点击展开和自动收起。
 
 后台目录刷新不再阻塞可用快照的读取，单次对话工具查询最多等待 8 秒；超时返回无法核实，不编造商品事实。工具执行与语音事件接收分开，查商品时仍可打断。可恢复的单轮错误保留会话，新的输入重置工具调用计数。模型提到已批准目录中的明确商品名时，UI 也会跟随已有商品记录切换，并保留核验时间。字幕使用独立布局区域，不覆盖数字人。原有十分钟体验上限会明确提示。
+
+### Brief network interruptions
+
+The Portal reference sends a ten-second ping/pong heartbeat that does not reset the shopper inactivity deadline. Browser disconnects retry for fifteen seconds; the backend retains the existing Qwen conversation and Runtime for a twenty-second reconnect window. Resume requires the same signed ticket, origin and IP and a still-live server session. It preserves product focus and chat history without creating a new billable session or replaying stale audio. Explicit close, two-minute inactivity and the original ten-minute demo limit still release resources.

@@ -35,11 +35,12 @@ from .shop_voice import ShopVoice, instructions
 from .schemas import PortalLocale
 
 router = APIRouter(include_in_schema=False)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error.portal.shopify")
 ROOT = Path(__file__).resolve().parents[3] / "web/portal"
 limiter = InMemoryRateLimiter()
 COOKIE = "kasamila_shop_oauth"
 active = {}
+connections = {}
 catalog_warmer = None
 
 
@@ -382,9 +383,74 @@ async def wait_for_inactivity(last_input, send, *, clock=time.monotonic, sleep=a
             return
 
 
+class ShopConnection:
+    """Keep the existing voice/Runtime session through a brief browser disconnect."""
+    grace_seconds = 20
+
+    def __init__(self, ws, ticket):
+        self.ws, self.ticket = ws, ticket
+        self.changed = asyncio.Event()
+        self.closed = asyncio.Event()
+        self.detached_at = None
+        self.resumes = 0
+
+    def detach(self, ws):
+        if self.ws is ws:
+            self.ws = None
+            self.detached_at = time.monotonic()
+            self.changed.clear()
+
+    async def attach(self, ws):
+        if self.closed.is_set() or (self.detached_at is not None and time.monotonic()-self.detached_at >= self.grace_seconds):
+            raise ValueError("Reconnect window ended")
+        old, self.ws = self.ws, ws
+        self.detached_at = None
+        self.resumes += 1
+        self.changed.set()
+        if old and old is not ws:
+            try:
+                await old.close()
+            except Exception:
+                pass
+
+    async def send_json(self, event):
+        ws = self.ws
+        if ws is None:
+            return  # Never queue/replay stale audio while the shopper is offline.
+        try:
+            await ws.send_json(event)
+        except (WebSocketDisconnect, OSError, RuntimeError):
+            self.detach(ws)
+
+    async def receive_text(self):
+        while not self.closed.is_set():
+            ws = self.ws
+            if ws is None:
+                remaining = self.grace_seconds-(time.monotonic()-self.detached_at)
+                await asyncio.wait_for(self.changed.wait(), max(.01, remaining))
+                continue
+            try:
+                raw = await ws.receive_text()
+                if ws is self.ws:
+                    return raw
+            except (WebSocketDisconnect, OSError, RuntimeError):
+                self.detach(ws)
+        raise WebSocketDisconnect()
+
+    async def close(self):
+        self.closed.set()
+        self.changed.set()
+        if self.ws:
+            try:
+                await self.ws.close()
+            except Exception:
+                pass
+
+
 @router.websocket("/portal/apps/shopify/socket")
 async def socket(ws: WebSocket):
     ticket, transport, owns = None, None, False
+    peer = None
     tasks = []
     opened_at, close_reason = time.monotonic(), "peer_closed"
     try:
@@ -393,7 +459,21 @@ async def socket(ws: WebSocket):
         if len(first.get("ticket", "")) > 4096:
             raise ValueError("Ticket too large")
         ticket = open_json(first.get("ticket", ""), "portal-shopify-chat")
-        if ticket["expires"] < time.time() or ticket["origin"] != ws.headers.get("origin") or ticket["ip"] != ws.client.host or not limiter.check("ticket:" + ticket["nonce"], 1, 600).allowed:
+        if ticket["origin"] != ws.headers.get("origin") or ticket["ip"] != ws.client.host:
+            raise ValueError("Invalid browser binding")
+        existing = connections.get(ticket["nonce"])
+        if first.get("resume") and existing and existing.ticket == ticket:
+            # Only the still-live, originally authenticated session can resume.
+            # Its original idle/Runtime/600-second deadlines never move.
+            if not limiter.check("resume:" + ticket["nonce"], 12, 60).allowed:
+                raise ValueError("Reconnect limit")
+            await existing.transport.input({"type": "interrupt", "audio_end_ms": 0})
+            await existing.attach(ws)
+            await existing.send_json({"type": "ready", "input_rate": existing.transport.input_rate, "resumed": True})
+            logger.info("shop_session_resumed count=%d", existing.resumes)
+            await existing.closed.wait()
+            return
+        if first.get("resume") or ticket["expires"] < time.time() or not limiter.check("ticket:" + ticket["nonce"], 1, 600).allowed:
             raise ValueError("Invalid or reused ticket")
         with get_session_factory()() as db:
             runtime = db.scalar(select(RuntimeSession).where(RuntimeSession.session_id == ticket["runtime_session"]))
@@ -420,15 +500,24 @@ async def socket(ws: WebSocket):
                               catalogue=[p for p in catalogue["products"] if visible(store, p)], checked_at=catalogue["synced_at"]*1000)
         active[ticket["nonce"]] = store["id"]
         await transport.connect()
+        peer = ShopConnection(ws, ticket)
+        peer.transport = transport
+        connections[ticket["nonce"]] = peer
         last_input = time.monotonic()
         async def receive():
-            nonlocal last_input
+            nonlocal last_input, close_reason
             limit = InMemoryRateLimiter()
             while True:
-                raw = await ws.receive_text()
+                raw = await peer.receive_text()
                 if len(raw) > 70000 or not limit.check("frames", 100, 1).allowed:
                     raise ValueError("Message limit")
                 item = json.loads(raw)
+                if item.get("type") == "ping":
+                    await peer.send_json({"type": "pong"})
+                    continue
+                if item.get("type") == "leave":
+                    close_reason = "shop_user_left"
+                    return
                 if item.get("type") == "audio":
                     pcm = base64.b64decode(item.get("data", ""), validate=True)
                     if not pcm or len(pcm) % 2 or len(pcm) > 32768:
@@ -437,7 +526,7 @@ async def socket(ws: WebSocket):
                     if not isinstance(item.get("text"), str) or not 1 <= len(item["text"].strip()) <= 2000:
                         raise ValueError("Invalid text")
                     if not limit.check("text", 30, 60).allowed:
-                        await ws.send_json({"type": "warning", "code": "shop_limited"})
+                        await peer.send_json({"type": "warning", "code": "shop_limited"})
                         continue
                     last_input = time.monotonic()
                 elif item.get("type") == "activity":
@@ -458,29 +547,35 @@ async def socket(ws: WebSocket):
             async for event in transport.events():
                 if event["type"] in ("user_activity", "user_text"):
                     last_input = time.monotonic()
-                await ws.send_json(event)
+                await peer.send_json(event)
                 if event["type"] == "error":
                     close_reason = event["code"]
                     return
+            close_reason = "shop_provider_closed"
+            await peer.send_json({"type": "error", "code": close_reason})
         async def idle_event(event):
             nonlocal close_reason
             close_reason = "shop_idle"
-            await ws.send_json(event)
+            await peer.send_json(event)
         tasks = [asyncio.create_task(receive()), asyncio.create_task(emit()), asyncio.create_task(wait_for_inactivity(lambda: last_input, idle_event))]
         completed, _ = await asyncio.wait(tasks, timeout=600, return_when=asyncio.FIRST_COMPLETED)
         if not completed:
             close_reason = "shop_session_limit"
-            await ws.send_json({"type": "ended", "code": close_reason})
+            await peer.send_json({"type": "ended", "code": close_reason})
         for task in completed:
             task.result()
     except (Exception, WebSocketDisconnect) as error:
         close_reason = error.code if isinstance(error, (ApiError, ProviderSetupError)) else type(error).__name__
         try:
-            await ws.send_json({"type": "error", "code": error.code if isinstance(error, (ApiError, ProviderSetupError)) else "shop_connection_failed"})
+            await (peer or ws).send_json({"type": "error", "code": error.code if isinstance(error, (ApiError, ProviderSetupError)) else "shop_connection_failed"})
         except Exception:
             pass
     finally:
-        logger.info("shop_session_closed reason=%s seconds=%d", close_reason, time.monotonic()-opened_at)
+        if owns:
+            logger.info("shop_session_closed reason=%s seconds=%d resumes=%d", close_reason, time.monotonic()-opened_at, peer.resumes if peer else 0)
+        if peer:
+            connections.pop(ticket["nonce"], None)
+            await peer.close()
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
