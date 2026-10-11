@@ -1,9 +1,12 @@
 import {language,localizedPortalUrl} from './i18n.js?v=20';
 import {demoText} from './demo-copy.js?v=4';
-import {shopText as t} from './shopify-copy.js?v=2';
+import {shopText as t} from './shopify-copy.js?v=3';
 import {drivePcm} from './examples/audio-bridge/bridge.mjs';
 const $=s=>document.querySelector(s),params=new URLSearchParams(location.search),embedded=location.pathname.endsWith('/embed');
 document.body.classList.toggle('shop-embed',embedded);
+// The published PCM player calls this optional host hook when playback drains.
+// This app owns turns through Qwen events, so no additional round is started.
+if(typeof window.start_new_round!=='function')window.start_new_round=async()=>{};
 let stores=[],current=null,products=[],candidates=[],focus=null,next=null,requestVersion=0,focusVersion=0,selecting=null,syncedAt=null,manualPinned=false,expanded=false;
 let player=null,socket=null,source=null,bootstrap=null,context=null,micStream=null,micNode=null,micInput=null,micSilent=null,output=null;
 let running=false,starting=false,ending=false,ready=false,muted=false,sessionVersion=0,inputRate=16000,playedStart=0,receivedMs=0,sessionTimer=null,startupTimer=null,idleTimer=null,lastInput=0,lastActivitySent=0;
@@ -17,7 +20,15 @@ function money(value){if(!value)return '';try{return new Intl.NumberFormat(langu
 function url(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch{return null;}}
 function text(tag,content,className){const node=document.createElement(tag);node.textContent=content||'';if(className)node.className=className;return node;}
 function image(value){const img=document.createElement('img');img.alt=value?.altText||'';img.loading='lazy';const src=url(value?.url);if(src)img.src=src;return img;}
-function showPoster(){if(!current)return;const src=new URL(current.avatar.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp',location.origin).href;$('#shop-stage').replaceChildren(image({url:src}));$('#shop-launch-avatar').src=src;$('#shop-avatar-name').textContent=current.avatar.names?.[language()]||current.avatar.name;}
+function frameLauncher(){
+ const img=$('#shop-launch-avatar');img.style.cssText='';document.body.classList.remove('shop-framed');
+ try{const canvas=document.createElement('canvas');canvas.width=192;canvas.height=Math.max(1,Math.round(192*img.naturalHeight/img.naturalWidth));const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+ let green=0,minX=canvas.width,minY=canvas.height,maxX=0,maxY=0;
+ for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){const i=(y*canvas.width+x)*4,[r,g,b,a]=pixels.slice(i,i+4);if(g>60&&g>r*1.35&&g>b*1.35){green++;continue;}if(a>20){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);}}
+ if(green>canvas.width*canvas.height*.4&&maxX>minX&&maxY>minY){document.body.classList.toggle('shop-framed',minY>canvas.height*.12);const side=Math.max((maxX-minX)*.8,(maxY-minY)*.38),left=(minX+maxX-side)/2,top=Math.max(0,minY-side*.08);img.style.cssText=`width:${canvas.width/side*100}%;height:${canvas.height/side*100}%;left:${-left/side*100}%;top:${-top/side*100}%;object-fit:fill;`;}
+ }catch{/* Standard portrait framing remains available for opaque/cross-origin images. */}
+}
+function showPoster(){if(!current)return;const src=new URL(current.avatar.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp',location.origin).href;$('#shop-stage').replaceChildren(image({url:src}));const portrait=$('#shop-launch-avatar');portrait.onload=frameLauncher;portrait.src=src;if(portrait.complete&&portrait.naturalWidth)frameLauncher();$('#shop-avatar-name').textContent=current.avatar.names?.[language()]||current.avatar.name;}
 function policies(shop){const root=$('#shop-policies');root.replaceChildren();for(const key of ['shippingPolicy','refundPolicy','termsOfService','privacyPolicy']){const item=shop?.[key];if(!item)continue;const a=text('a',item.title);const href=url(item.url);if(href){a.href=href;a.target='_blank';a.rel='noopener noreferrer';}root.append(a,text('p',(item.body||'').replace(/<[^>]*>/g,' ')));}}
 function productCards(){const list=$('#shop-product-list');list.replaceChildren();for(const product of products){const button=document.createElement('button');button.type='button';button.className='shop-product-card';button.append(image(product.featuredImage),text('strong',product.title),text('span',money(product.priceRange.minVariantPrice)));button.onclick=()=>void selectProduct(product);list.append(button);}$('#shop-more').hidden=next===null;}
 function renderDetails(product,checkedAt=syncedAt){const root=$('#shop-product-details'),media=document.createElement('div'),info=document.createElement('div');root.replaceChildren(media,info);const main=image(product.featuredImage);media.append(main);const gallery=document.createElement('div');gallery.className='shop-gallery';media.append(gallery);
@@ -34,11 +45,11 @@ function renderDetails(product,checkedAt=syncedAt){const root=$('#shop-product-d
 function renderFocus(product,checkedAt=Date.now()){
  focus=product;focusVersion++;const root=$('#shop-focus');root.hidden=false;$('#shop-welcome').hidden=true;
  const img=image(product.featuredImage);img.className='shop-product-image';const info=document.createElement('div');info.className='shop-focus-info';
- const bottom=document.createElement('div');bottom.className='shop-focus-bottom';const buy=text('button',t('buy'),'shop-buy');buy.type='button';buy.onclick=()=>void openDetails(product);
- bottom.append(text('p',money(product.priceRange.minVariantPrice),'shop-price'),buy);info.append(text('h2',product.title),text('p',product.description,'shop-summary'),bottom);root.replaceChildren(img,info);
+ const bottom=document.createElement('div');bottom.className='shop-focus-bottom';const buy=text('button',t('viewBuy'),'shop-buy');buy.type='button';buy.onclick=()=>void openDetails(product);
+ bottom.append(text('p',money(product.priceRange.minVariantPrice),'shop-price'),buy);info.append(text('h2',product.title),text('p',[product.vendor,t(product.availableForSale?'stock':'out'),t('checked')+' '+new Date(checkedAt).toLocaleTimeString(language())].filter(Boolean).join(' · '),'shop-summary'),bottom);root.replaceChildren(img,info);
  const rail=$('#shop-recommendations');rail.replaceChildren();for(const item of candidates){const b=text('button',item.title);b.type='button';b.setAttribute('aria-current',String(item.id===product.id));b.onclick=()=>void selectProduct(item);rail.append(b);}$('#shop-next').hidden=candidates.length<2;
 }
-async function selectProduct(product){manualPinned=true;interrupt();renderFocus(product);send({type:'product_context',product:product.id});$('#shop-drawer').close();}
+async function selectProduct(product){manualPinned=true;interrupt();const version=sessionVersion,selection=++focusVersion;$('#shop-drawer').close();message(t('loading'));try{const b=buyer();const value=await api('product?'+new URLSearchParams({...b,lang:b.locale,product:product.id}));if(!expanded||version!==sessionVersion||selection!==focusVersion)return;renderFocus(value.product);send({type:'product_context',product:product.id});message('');}catch(error){message(errorMessage(error));}}
 async function openDetails(product){const version=sessionVersion,selection=++focusVersion;$('#shop-product-dialog').showModal();$('#shop-product-details').replaceChildren(text('p',t('loading')));try{const b=buyer();const value=await api('product?'+new URLSearchParams({...b,lang:b.locale,product:product.id}));if(!expanded||version!==sessionVersion||selection!==focusVersion)return;renderDetails(value.product,Date.now());}catch(error){$('#shop-product-details').replaceChildren(text('p',errorMessage(error)));}}
 async function loadCountries(){try{const data=await api('countries?'+new URLSearchParams({store:current.id,lang:language()}));$('#shop-country').replaceChildren(...data.countries.map(c=>new Option(c.name+' · '+c.currency.isoCode,c.isoCode)));$('#shop-country').value=data.countries.some(c=>c.isoCode===current.default_country)?current.default_country:data.countries[0]?.isoCode||'';}catch(error){message(errorMessage(error));}}
 async function loadProducts(append=false){if(!current)return;const version=++requestVersion,b=buyer();message(t('loading'));try{const data=await api('products?'+new URLSearchParams({store:b.store,country:b.country,lang:b.locale,offset:append?next||0:0,query:$('#shop-search').value}));if(version!==requestVersion)return;syncedAt=data.synced_at*1000;products=append?[...products,...data.products]:data.products;next=data.next_offset;productCards();policies(data.shop);message(products.length?'':t('empty'));}catch(error){if(version===requestVersion)message(errorMessage(error));}}
@@ -57,7 +68,7 @@ async function end(note=demoText('ended'),collapse=false){
  if(collapse){panel(false);for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();}
  if(ending)return;ending=true;sessionVersion++;requestVersion++;focusVersion++;ready=running=starting=false;clearTimeout(sessionTimer);clearTimeout(startupTimer);clearTimeout(idleTimer);controls();
  const oldBootstrap=bootstrap;bootstrap=null;const old=player;player=null;const oldContext=context;context=null;const oldSocket=socket;socket=null;
- await stopMic();oldSocket?.close();stopAudio();try{await old?.destroy();}catch{}finally{await releaseRuntime(oldBootstrap);}try{await oldContext?.close();}catch{}
+ await stopMic();oldSocket?.close();stopAudio();let released=false;try{if(old){await old.destroy();released=true;}}catch{}finally{if(!released)await releaseRuntime(oldBootstrap);}try{await oldContext?.close();}catch{}
  ending=false;showPoster();status(note);message(collapse?note:'');controls();if(!collapse&&expanded)activity(false);if(collapse)$('#shop-launch').focus();
 }
 async function start(){if(running||starting||ending||!current)return;starting=true;panel(true);activity();const attempt=++sessionVersion;controls();status(demoText('connecting'));message('');$('#shop-history').replaceChildren();$('#shop-subtitle').textContent='';$('#shop-user-turn').hidden=true;$('#shop-focus').hidden=true;$('#shop-welcome').hidden=false;$('#shop-recommendations').replaceChildren();$('#shop-next').hidden=true;focus=null;candidates=[];manualPinned=false;lastActivitySent=0;
