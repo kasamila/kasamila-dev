@@ -29,7 +29,7 @@ from .live_config import read_record, write
 from .livestream import origin, base, cookie_domain, clear_cookie, create_obs_runtime
 from .shop_config import KEY, SCOPES, ShopSettings, load, redacted, save, store_for, shop_domain
 from .shop_client import remote, verify_oauth, verify_webhook, verified_shop_alias, context, METADATA
-from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for
+from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for, warm_catalogs, refresh_tasks
 from .shop_voice import ShopVoice, instructions
 from .schemas import PortalLocale
 
@@ -38,6 +38,23 @@ ROOT = Path(__file__).resolve().parents[3] / "web/portal"
 limiter = InMemoryRateLimiter()
 COOKIE = "kasamila_shop_oauth"
 active = {}
+catalog_warmer = None
+
+
+@router.on_event("startup")
+async def start_catalog_warmer():
+    global catalog_warmer
+    from ...core.config import get_settings
+    if get_settings().environment == "production":
+        catalog_warmer = asyncio.create_task(warm_catalogs())
+
+
+@router.on_event("shutdown")
+async def stop_catalog_warmer():
+    tasks = [t for t in [catalog_warmer, *refresh_tasks.values()] if t]
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def response(value):
@@ -57,6 +74,12 @@ def public_store(db, ident):
 @router.get("/portal/apps/shopify")
 def page():
     return FileResponse(ROOT / "shopify.html", headers={"Cache-Control": "no-store"})
+
+
+@router.get("/portal/apps/shopify/widget.js")
+def widget():
+    # Public module only. Merchant data remains inside the allowlisted iframe.
+    return FileResponse(ROOT / "shopify-widget.js", media_type="text/javascript", headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=300"})
 
 
 @router.get("/portal/apps/shopify/embed")
@@ -290,7 +313,7 @@ async def products(request: Request, db: DatabaseSession, store: str, country: s
         raise ApiError(422, "shop_query_invalid", "Invalid catalogue request")
     if not limiter.check("catalog:" + (request.client.host if request.client else ""), 60, 60).allowed:
         raise ApiError(429, "shop_limited", "Try again later")
-    _, data = await snapshot(store, country.upper(), lang)
+    _, data = await snapshot(store, country.upper(), lang, background=True)
     candidates = [p for p in data["products"] if visible(configured, p) and (not query or query.casefold() in (p["title"] + " " + p["description"]).casefold())]
     return response({"products": candidates[offset:offset + 24], "total": len(candidates), "next_offset": offset + 24 if offset + 24 < len(candidates) else None, "shop": data["shop"], "countries": data["localization"]["availableCountries"], "synced_at": data["synced_at"]})
 
@@ -349,6 +372,14 @@ def start(request: Request, payload: BuyerRequest, db: DatabaseSession):
     return response({**runtime, "ticket": ticket})
 
 
+async def wait_for_inactivity(last_input, send, *, clock=time.monotonic, sleep=asyncio.sleep):
+    while True:
+        await sleep(max(.1, 120-(clock()-last_input())))
+        if clock()-last_input() >= 120:
+            await send({"type": "idle"})
+            return
+
+
 @router.websocket("/portal/apps/shopify/socket")
 async def socket(ws: WebSocket):
     ticket, transport, owns = None, None, False
@@ -371,7 +402,7 @@ async def socket(ws: WebSocket):
         if store["shop"] != ticket["shop"] or len(active) >= demos["max_concurrent_sessions"]:
             raise ValueError("Store changed or busy")
         # Validate country before any audio/model requests.
-        await snapshot(store["id"], ticket["country"], ticket["locale"])
+        _, catalogue = await snapshot(store["id"], ticket["country"], ticket["locale"], background=True)
         avatar = next(a for a in demos["avatars"] if a["id"] == store["avatar"])
         channel = next(c for c in demos["channels"] if c["id"] == store["channel"])
         async def tool(name, args):
@@ -380,10 +411,14 @@ async def socket(ws: WebSocket):
                 if current["shop"] != ticket["shop"]:
                     raise ApiError(409, "shop_configuration_changed", "Store configuration changed")
             return await tools(ticket["store"], ticket["country"], ticket["locale"], name, args)
-        transport = ShopVoice(channel, instructions(store, avatar, ticket["locale"], ticket["country"]), store["voice"] or avatar["voices"].get(channel["id"]), PROVIDERS["qwen"], tool=tool)
+        index = [{"id": p["id"], "title": p["title"]} for p in catalogue["products"] if visible(store, p)][:80]
+        prompt = instructions(store, avatar, ticket["locale"], ticket["country"]) + "\nCatalogue index (identifiers only; retrieve facts before claims): " + json.dumps(index, ensure_ascii=False)
+        transport = ShopVoice(channel, prompt, store["voice"] or avatar["voices"].get(channel["id"]), PROVIDERS["qwen"], tool=tool)
         active[ticket["nonce"]] = store["id"]
         await transport.connect()
+        last_input = time.monotonic()
         async def receive():
+            nonlocal last_input
             limit = InMemoryRateLimiter()
             while True:
                 raw = await ws.receive_text()
@@ -397,17 +432,29 @@ async def socket(ws: WebSocket):
                 elif item.get("type") == "text":
                     if not isinstance(item.get("text"), str) or not 1 <= len(item["text"].strip()) <= 2000 or not limit.check("text", 12, 60).allowed:
                         raise ValueError("Invalid text")
+                    last_input = time.monotonic()
+                elif item.get("type") == "activity":
+                    if limit.check("activity", 30, 60).allowed:
+                        last_input = time.monotonic()
+                    continue
+                elif item.get("type") == "product_context":
+                    if not limit.check("context", 20, 60).allowed or item.get("product") not in {p["id"] for p in catalogue["products"] if visible(store, p)}:
+                        raise ValueError("Invalid product context")
+                    last_input = time.monotonic()
                 elif item.get("type") == "interrupt":
                     item["audio_end_ms"] = max(0, min(int(item.get("audio_end_ms", 0)), 600000))
                 elif item.get("type") != "audio_end":
                     raise ValueError("Unknown input")
                 await transport.input(item)
         async def emit():
+            nonlocal last_input
             async for event in transport.events():
+                if event["type"] in ("user_activity", "user_text"):
+                    last_input = time.monotonic()
                 await ws.send_json(event)
                 if event["type"] == "error":
                     return
-        tasks = [asyncio.create_task(receive()), asyncio.create_task(emit())]
+        tasks = [asyncio.create_task(receive()), asyncio.create_task(emit()), asyncio.create_task(wait_for_inactivity(lambda: last_input, ws.send_json))]
         completed, _ = await asyncio.wait(tasks, timeout=600, return_when=asyncio.FIRST_COMPLETED)
         for task in completed:
             task.result()

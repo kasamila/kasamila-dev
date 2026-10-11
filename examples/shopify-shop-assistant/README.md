@@ -44,7 +44,7 @@ CLI 从服务器环境变量 `SHOPIFY_ACCESS_TOKEN` 读取已有店主授权得�
 
 `host/client.py` 是与生产共享的 GraphQL / 分页 / 签名验证适配器；`host/voice.py` 是 Qwen 原生工具的 continuation 与取消实现。`reference/portal` 包含完整 Portal 集成参考源码及前端；它依赖 Kasamila Portal 的身份、加密设置、数据库和公开 Runtime API，不能脱离该宿主直接启动。独立产品可以实现相同的存储 / 授权接口，复用 `host` 组件并接入 Kasamila 公开 Runtime 服务；无须修改 Kasamila API 或 SDK。
 
-商品目录按国家与语言分区，更新 webhook 会失效缓存，未收到通知时也按管理员配置的间隔刷新。每次工具推荐、规格展示和创建购物车前再次请求当前产品与国家可用性。Shopify 结账核定实际运费、税费、优惠和最终库存；不能仅凭 Markets 条件推断 B2B、渠道条件或继承策略。退换货来自已公布的店铺政策，缺失信息应回答无法确认。订阅、复杂组合和超过演示数量范围的购买应在商店处理。
+商品目录按国家与语言分区，更新 webhook 会失效缓存，未收到通知时也按管理员配置的间隔刷新。对话结果最多短缓存 20 秒；规格展示和创建购物车前再次请求当前产品与国家可用性。Shopify 结账核定实际运费、税费、优惠和最终库存；不能仅凭 Markets 条件推断 B2B、渠道条件或继承策略。退换货来自已公布的店铺政策，缺失信息应回答无法确认。订阅、复杂组合和超过演示数量范围的购买应在商店处理。
 
 会话由访客明确开始，最多 10 分钟，结束后释放 Runtime 和 Qwen 连接；不保存对话记录。商品内容和用户输入均作为不可信资料处理，模型通过提示约束使用查询结果；仍需店主评估人设、内容护栏和回答质量。购物车创建不会自动支付或提交订单。
 
@@ -55,3 +55,9 @@ CLI 从服务器环境变量 `SHOPIFY_ACCESS_TOKEN` 读取已有店主授权得�
 - [Storefront Cart](https://shopify.dev/docs/api/storefront/latest/mutations/cartCreate)
 - [Mandatory privacy webhooks](https://shopify.dev/docs/apps/build/compliance/privacy-law-compliance)
 - [Qwen 3.8 realtime](https://help.aliyun.com/en/model-studio/qwen3-8-omni-flash-realtime)
+
+## 对话舞台与低延迟查询
+
+挂件默认仅显示角落头像，点击后展开并建立连接。商品随对话显示在数字人前方，全部商品在抽屉中查看。顾客连续 120 秒没有打字、语音或点击操作时自动收起，并关闭麦克风、音频、Qwen 和 Runtime；再次点击会开启新会话。数字人自己的回复和静音音频不会延长计时。传入 `floating:false` 可保留行内 iframe 模式。
+
+目录在后台刷新；对话每次最多批量读取 3 个候选商品，已核验结果短缓存 20 秒，按商店、国家、语言及 webhook 版本隔离。模型接收精简事实，减少重复工具调用。商品详情和购物车仍实时核验，不使用短缓存。Admin 复制的挂件与主题 block 都支持点击展开和自动收起。

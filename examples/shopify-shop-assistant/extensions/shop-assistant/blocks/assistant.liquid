@@ -1,9 +1,13 @@
 {% assign assistant_locale = request.locale.iso_code | split: '-' | first %}
 {% if block.settings.demo_id != blank %}
-<iframe src="https://kasamila.com/portal/apps/shopify/embed?store={{ block.settings.demo_id | url_encode }}&amp;lang={{ assistant_locale | url_encode }}"
-  title="Shopify Live Shop Assistant" allow="microphone; autoplay" loading="lazy" referrerpolicy="no-referrer"
-  style="width:100%;height:{{ block.settings.height }}px;border:0;border-radius:16px"></iframe>
+<div id="kasamila-assistant-{{ block.id }}"></div>
+<script type="module">
+import {mountAssistant} from 'https://kasamila.com/portal/apps/shopify/widget.js?v=2';
+const target=document.getElementById({{ 'kasamila-assistant-' | append: block.id | json }});
+const widget=mountAssistant(target,{store:{{ block.settings.demo_id | json }},language:{{ assistant_locale | json }},floating:true});
+document.addEventListener('shopify:section:unload',event=>{if(event.target.contains(target))widget.destroy();});
+</script>
 {% endif %}
 {% schema %}
-{"name":"Kasamila shop assistant","target":"section","settings":[{"type":"text","id":"demo_id","label":"Portal demo store ID","default":"kasamila"},{"type":"range","id":"height","label":"Widget height","min":400,"max":1600,"step":50,"default":850}]}
+{"name":"Kasamila shop assistant","target":"section","settings":[{"type":"text","id":"demo_id","label":"Portal demo store ID","default":"kasamila"}]}
 {% endschema %}
