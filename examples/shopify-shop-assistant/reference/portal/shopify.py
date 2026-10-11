@@ -86,10 +86,12 @@ def widget():
 
 
 @router.get("/portal/apps/shopify/embed")
-def embed(request: Request, db: DatabaseSession, store: str):
+def embed(request: Request, db: DatabaseSession, store: str, view: bool = False):
     configured, _ = public_store(db, store)
     ancestors = " ".join(["'self'", *configured["embed_origins"]])
-    return FileResponse(ROOT / "shopify.html", headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "frame-ancestors " + ancestors, "X-Frame-Options": "", "X-Robots-Tag": "noindex"})
+    # Published playback accesses its immediate parent. Keep it same-origin
+    # without changing the SDK or granting access to the merchant document.
+    return FileResponse(ROOT / ("shopify.html" if view else "shopify-embed.html"), headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "frame-ancestors " + ancestors, "X-Frame-Options": "", "X-Robots-Tag": "noindex"})
 
 
 @router.get("/api/v1/admin/portal/shopify/manage")

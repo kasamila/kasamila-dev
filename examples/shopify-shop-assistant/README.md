@@ -82,4 +82,6 @@ The Portal reference sends a ten-second ping/pong heartbeat that does not reset 
 
 ### Continuous microphone backpressure
 
-The reference skips long near-silence while preserving a 300 ms onset pre-roll and a 1.2-second trailing VAD window. Browser writes are bounded at 64 KiB. The host uses a separate bounded audio pump so slow upstream writes cannot block browser heartbeats and controls; Qwen write buffering is bounded per connection. If speech cannot be delivered in time, a localized warning asks the visitor to repeat it. A late application pong is not treated as proof of disconnection. These controls apply to the Shopify demo only.
+Microphone capture uses the same continuous 16 kHz mono PCM and Qwen transport defaults as the realtime chat demo, including echo cancellation and noise suppression. Do not reduce TCP send buffers or apply an amplitude gate that clips quiet speech. Browser writes are bounded at 64 KiB. A separate three-second audio pump keeps browser heartbeats responsive during transient upstream stalls. A localized warning reports discarded stale audio; delayed pongs alone do not disconnect the session.
+
+The public embed URL hosts the assistant inside a same-origin child frame so the published player's parent-window accesses work inside Shopify. Both frames retain the merchant-specific CSP allowlist. Only validated expand/collapse messages pass through to the merchant page; no credentials are forwarded. Microphone and autoplay permissions are delegated through both frames.

@@ -15,7 +15,7 @@ logger = logging.getLogger("uvicorn.error.portal.shop_voice")
 
 class ShopAudioPump:
     """Bound microphone latency without blocking browser control/heartbeat reads."""
-    def __init__(self, transport, warning, *, max_frames=12, max_age=1.2):
+    def __init__(self, transport, warning, *, max_frames=30, max_age=3):
         self.transport, self.warning = transport, warning
         self.queue = asyncio.Queue(maxsize=max_frames)
         self.max_age = max_age
@@ -92,18 +92,6 @@ class ShopVoice(VoiceTransport):
         self.transcript = ""
         self.focus_id = None
         self.output_events = None
-
-    async def connect(self):
-        await super().connect()
-        # Scope write buffering to this Qwen connection. Unbounded PCM queued on
-        # a slow upstream used to delay VAD and block the browser's pong reader.
-        self.ws.transport.set_write_buffer_limits(high=8192, low=2048)
-        import socket
-        sock = self.ws.transport.get_extra_info("socket")
-        if sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 16384)
-            if hasattr(socket, "TCP_NOTSENT_LOWAT"):
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NOTSENT_LOWAT, 8192)
 
     async def _tool(self, name, args):
         started = time.monotonic()

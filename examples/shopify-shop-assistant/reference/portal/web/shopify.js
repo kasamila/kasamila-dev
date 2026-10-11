@@ -10,7 +10,6 @@ if(typeof window.start_new_round!=='function')window.start_new_round=async()=>{}
 let stores=[],current=null,products=[],candidates=[],focus=null,next=null,requestVersion=0,focusVersion=0,selecting=null,syncedAt=null,manualPinned=false,expanded=false;
 let player=null,socket=null,source=null,bootstrap=null,context=null,micStream=null,micNode=null,micInput=null,micSilent=null,output=null;
 let running=false,starting=false,ending=false,ready=false,muted=false,sessionVersion=0,inputRate=16000,playedStart=0,receivedMs=0,sessionTimer=null,startupTimer=null,idleTimer=null,lastInput=0,lastActivitySent=0;
-let micPreroll=[],micTail=0;
 let heartbeatTimer=null,reconnectTimer=null,reconnectDeadlineTimer=null,reconnecting=false,reconnectStarted=0,reconnectAttempts=0,lastPong=0;
 function message(value){$('#shop-message').textContent=value;$('#shop-launch-status').textContent=expanded?'':value;}
 function status(value){$('#shop-status').textContent=value;}
@@ -62,17 +61,15 @@ function bubble(role,value=''){const node=text('p',value,'shop-bubble '+role);no
 function send(value){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify(value));}
 function stopAudio(){const old=source;source=null;old?.abort();player?.stop();output=null;playedStart=0;receivedMs=0;}
 function interrupt(){send({type:'interrupt',audio_end_ms:Math.floor(playedStart?Math.min(receivedMs,Math.max(0,performance.now()-playedStart)):0)});stopAudio();}
-async function stopMic(){micPreroll=[];micTail=0;micNode?.disconnect();micInput?.disconnect();micSilent?.disconnect();micStream?.getTracks().forEach(t=>t.stop());micNode=micInput=micSilent=micStream=null;send({type:'audio_end'});$('#shop-mic').setAttribute('aria-pressed','false');$('#shop-mic').textContent=demoText('mic');}
-// Retain a quiet speech onset and enough trailing silence for Qwen server VAD.
-// Idle silence must not consume the upstream bandwidth needed for the next turn.
+async function stopMic(){micNode?.disconnect();micInput?.disconnect();micSilent?.disconnect();micStream?.getTracks().forEach(t=>t.stop());micNode=micInput=micSilent=micStream=null;send({type:'audio_end'});$('#shop-mic').setAttribute('aria-pressed','false');$('#shop-mic').textContent=demoText('mic');}
+// Use the same continuous PCM capture as the realtime chat demo. Qwen VAD
+// owns speech boundaries; a browser volume gate must not clip quiet syllables.
 function microphoneFrame(samples){
- let energy=0;for(const sample of samples)energy+=sample*sample;const rms=samples.length?Math.sqrt(energy/samples.length):0;
- if(rms>330)activity();if(rms>80)micTail=12;
- if(!micTail){micPreroll.push(samples);if(micPreroll.length>3)micPreroll.shift();return;}
- micTail--;const chunks=[...micPreroll,samples];micPreroll=[];
- for(const chunk of chunks){if((socket?.bufferedAmount||0)>=65536){message(t('audioSlow'));continue;}const bytes=new Uint8Array(chunk.buffer,chunk.byteOffset,chunk.byteLength);let encoded='';for(const byte of bytes)encoded+=String.fromCharCode(byte);send({type:'audio',data:btoa(encoded)});}
+ let energy=0;for(const sample of samples)energy+=sample*sample;if(samples.length&&Math.sqrt(energy/samples.length)>330)activity();
+ if((socket?.bufferedAmount||0)>=65536){message(t('audioSlow'));return;}
+ const bytes=new Uint8Array(samples.buffer,samples.byteOffset,samples.byteLength);let encoded='';for(const byte of bytes)encoded+=String.fromCharCode(byte);send({type:'audio',data:btoa(encoded)});
 }
-async function toggleMic(){const attempt=sessionVersion,audioContext=context;if(micStream){await stopMic();return;}try{await audioContext.audioWorklet.addModule('/web/portal/demo-microphone.js');const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}});if(!ready||attempt!==sessionVersion){stream.getTracks().forEach(track=>track.stop());return;}micStream=stream;micInput=context.createMediaStreamSource(micStream);micNode=new AudioWorkletNode(context,'demo-microphone',{processorOptions:{sampleRate:inputRate}});micSilent=context.createGain();micSilent.gain.value=0;micInput.connect(micNode).connect(micSilent).connect(context.destination);micNode.port.onmessage=event=>{if(attempt!==sessionVersion||!ready){micPreroll=[];micTail=0;return;}microphoneFrame(new Int16Array(event.data));};$('#shop-mic').setAttribute('aria-pressed','true');$('#shop-mic').textContent=demoText('micOff');}catch{if(attempt===sessionVersion){await stopMic();status(demoText('failed'));}}}
+async function toggleMic(){const attempt=sessionVersion,audioContext=context;if(micStream){await stopMic();return;}try{await audioContext.audioWorklet.addModule('/web/portal/demo-microphone.js');const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}});if(!ready||attempt!==sessionVersion){stream.getTracks().forEach(track=>track.stop());return;}micStream=stream;micInput=context.createMediaStreamSource(micStream);micNode=new AudioWorkletNode(context,'demo-microphone',{processorOptions:{sampleRate:inputRate}});micSilent=context.createGain();micSilent.gain.value=0;micInput.connect(micNode).connect(micSilent).connect(context.destination);micNode.port.onmessage=event=>{if(attempt!==sessionVersion||!ready){return;}microphoneFrame(new Int16Array(event.data));};$('#shop-mic').setAttribute('aria-pressed','true');$('#shop-mic').textContent=demoText('micOff');}catch{if(attempt===sessionVersion){await stopMic();status(demoText('failed'));}}}
 
 async function releaseRuntime(value){if(!value)return;try{await fetch(new URL('/api/v1/runtime/sessions/end',value.api_base||location.origin),{method:'POST',keepalive:true,headers:{Authorization:'Bearer '+value.runtime.client_token}});}catch{}}
 async function end(note=demoText('ended'),collapse=false){
