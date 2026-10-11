@@ -15,7 +15,7 @@ logger = logging.getLogger("uvicorn.error.portal.shop_voice")
 
 
 class ShopSpeechGate:
-    """Keep complete speech; omit sustained non-speech before the Qwen uplink."""
+    """Keep complete speech and replace sustained noise with silent PCM."""
     def __init__(self):
         import webrtcvad
         # Conservative WebRTC classifier, not a volume threshold. Quiet speech
@@ -45,6 +45,9 @@ class ShopSpeechGate:
                 self.tail = 12
             if not self.tail:
                 self.preroll.append(chunk)
+                # Keep Qwen's audio clock advancing. Omitting quiet frames can
+                # defer its speech-ended event even after a complete VAD tail.
+                output.append(bytes(len(chunk)))
                 continue
             self.tail -= 1
             output.extend(self.preroll)
