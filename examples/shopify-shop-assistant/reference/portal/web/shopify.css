@@ -12,3 +12,15 @@
 #shop-launch{position:relative;width:88px;height:88px;overflow:hidden;padding:0;border-radius:50%}#shop-launch img{position:absolute;inset:0;width:100%;height:100%;border-radius:0;order:initial}#shop-launch span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media(max-width:700px){#shop-launch{width:72px;height:72px}.shop-user-turn{max-height:52px}}
 html:has(body.shop-embed:not(.shop-open)){background:transparent;color-scheme:normal}.shop-embed:not(.shop-open) #shop-launch-note{background:#122e33;border-radius:8px;padding:6px 8px}.shop-embed:not(.shop-open) #shop-launcher>a{background:#122e33;border-radius:6px;padding:3px 6px}
+
+/* Captions participate in layout; no transcript can cover the avatar's face. */
+.shop-scene{height:auto;min-height:0;max-height:none;overflow:visible;display:flex;flex-direction:column;gap:12px;padding-bottom:12px}
+.shop-avatar-area{position:relative;isolation:isolate;overflow:hidden;height:clamp(240px,calc(100dvh - 440px),510px);flex:none}
+.shop-captions{margin:0 3%;display:grid;gap:6px;min-width:0}
+.shop-user-turn{position:static;width:auto;max-width:100%;max-height:44px;overflow:auto;margin:0;padding:7px 15px;font-size:13px;line-height:1.6;border-radius:12px}
+#shop-subtitle{position:static;transform:none;width:auto;max-width:100%;max-height:72px;overflow:auto;margin:0;padding:9px 18px;font-size:17px;line-height:1.5;border-radius:16px;text-align:start;overflow-wrap:anywhere}
+.shop-captions:has(#shop-user-turn[hidden]):has(#shop-subtitle:empty){display:none}
+#shop-focus{position:static;align-self:center;min-height:0;max-height:none;flex:none}
+#shop-focus>.shop-product-image{height:180px}
+#shop-welcome{bottom:12px}
+@media(max-width:700px){.shop-scene{gap:8px;padding-bottom:6px}.shop-avatar-area{height:clamp(210px,calc(100dvh - 500px),390px)}.shop-user-turn{max-height:36px;font-size:11px;padding:5px 10px}#shop-subtitle{font-size:13px;max-height:60px;padding:7px 12px}#shop-focus>.shop-product-image{height:140px}.shop-identity{top:15px}}

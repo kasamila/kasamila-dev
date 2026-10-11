@@ -3,6 +3,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import logging
 import secrets
 import time
 from pathlib import Path
@@ -34,6 +35,7 @@ from .shop_voice import ShopVoice, instructions
 from .schemas import PortalLocale
 
 router = APIRouter(include_in_schema=False)
+logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[3] / "web/portal"
 limiter = InMemoryRateLimiter()
 COOKIE = "kasamila_shop_oauth"
@@ -384,6 +386,7 @@ async def wait_for_inactivity(last_input, send, *, clock=time.monotonic, sleep=a
 async def socket(ws: WebSocket):
     ticket, transport, owns = None, None, False
     tasks = []
+    opened_at, close_reason = time.monotonic(), "peer_closed"
     try:
         await ws.accept()
         first = json.loads(await asyncio.wait_for(ws.receive_text(), 10))
@@ -413,7 +416,8 @@ async def socket(ws: WebSocket):
             return await tools(ticket["store"], ticket["country"], ticket["locale"], name, args)
         index = [{"id": p["id"], "title": p["title"]} for p in catalogue["products"] if visible(store, p)][:80]
         prompt = instructions(store, avatar, ticket["locale"], ticket["country"]) + "\nCatalogue index (identifiers only; retrieve facts before claims): " + json.dumps(index, ensure_ascii=False)
-        transport = ShopVoice(channel, prompt, store["voice"] or avatar["voices"].get(channel["id"]), PROVIDERS["qwen"], tool=tool)
+        transport = ShopVoice(channel, prompt, store["voice"] or avatar["voices"].get(channel["id"]), PROVIDERS["qwen"], tool=tool,
+                              catalogue=[p for p in catalogue["products"] if visible(store, p)], checked_at=catalogue["synced_at"]*1000)
         active[ticket["nonce"]] = store["id"]
         await transport.connect()
         last_input = time.monotonic()
@@ -430,8 +434,11 @@ async def socket(ws: WebSocket):
                     if not pcm or len(pcm) % 2 or len(pcm) > 32768:
                         raise ValueError("Invalid PCM")
                 elif item.get("type") == "text":
-                    if not isinstance(item.get("text"), str) or not 1 <= len(item["text"].strip()) <= 2000 or not limit.check("text", 12, 60).allowed:
+                    if not isinstance(item.get("text"), str) or not 1 <= len(item["text"].strip()) <= 2000:
                         raise ValueError("Invalid text")
+                    if not limit.check("text", 30, 60).allowed:
+                        await ws.send_json({"type": "warning", "code": "shop_limited"})
+                        continue
                     last_input = time.monotonic()
                 elif item.get("type") == "activity":
                     if limit.check("activity", 30, 60).allowed:
@@ -447,23 +454,33 @@ async def socket(ws: WebSocket):
                     raise ValueError("Unknown input")
                 await transport.input(item)
         async def emit():
-            nonlocal last_input
+            nonlocal last_input, close_reason
             async for event in transport.events():
                 if event["type"] in ("user_activity", "user_text"):
                     last_input = time.monotonic()
                 await ws.send_json(event)
                 if event["type"] == "error":
+                    close_reason = event["code"]
                     return
-        tasks = [asyncio.create_task(receive()), asyncio.create_task(emit()), asyncio.create_task(wait_for_inactivity(lambda: last_input, ws.send_json))]
+        async def idle_event(event):
+            nonlocal close_reason
+            close_reason = "shop_idle"
+            await ws.send_json(event)
+        tasks = [asyncio.create_task(receive()), asyncio.create_task(emit()), asyncio.create_task(wait_for_inactivity(lambda: last_input, idle_event))]
         completed, _ = await asyncio.wait(tasks, timeout=600, return_when=asyncio.FIRST_COMPLETED)
+        if not completed:
+            close_reason = "shop_session_limit"
+            await ws.send_json({"type": "ended", "code": close_reason})
         for task in completed:
             task.result()
     except (Exception, WebSocketDisconnect) as error:
+        close_reason = error.code if isinstance(error, (ApiError, ProviderSetupError)) else type(error).__name__
         try:
             await ws.send_json({"type": "error", "code": error.code if isinstance(error, (ApiError, ProviderSetupError)) else "shop_connection_failed"})
         except Exception:
             pass
     finally:
+        logger.info("shop_session_closed reason=%s seconds=%d", close_reason, time.monotonic()-opened_at)
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)

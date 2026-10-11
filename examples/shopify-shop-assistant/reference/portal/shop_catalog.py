@@ -91,6 +91,15 @@ async def snapshot(ident, country, locale="en", force=False, background=False):
         recent_contexts.pop(min(recent_contexts, key=recent_contexts.get), None)
     client = client_for(ident)
     key = catalog_key(client.store, country, locale)
+    # Background refresh must not hold up a conversation behind its network I/O.
+    # Prices/stock are still revalidated by conversation_products/product_detail.
+    if background and not force:
+        with get_session_factory()() as db:
+            cached = read_record(db, key)
+        if cached and cached["fingerprint"] == fingerprint(client.store) and cached["synced_at"] + 300 > time.time():
+            if cached["synced_at"] + client.store["sync_seconds"] <= time.time():
+                refresh_later(ident, country, locale)
+            return client, cached
     async with sync_locks.setdefault(key, asyncio.Lock()):
         client = client_for(ident)
         with get_session_factory()() as db:
