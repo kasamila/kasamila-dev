@@ -31,7 +31,7 @@ from .livestream import origin, base, cookie_domain, clear_cookie, create_obs_ru
 from .shop_config import KEY, SCOPES, ShopSettings, load, redacted, save, store_for, shop_domain
 from .shop_client import remote, verify_oauth, verify_webhook, verified_shop_alias, context, METADATA
 from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for, warm_catalogs, refresh_tasks
-from .shop_voice import ShopVoice, ShopAudioPump, instructions
+from .shop_voice import ShopVoice, ShopAudioPump, ShopSpeechGate, instructions
 from .schemas import PortalLocale
 
 router = APIRouter(include_in_schema=False)
@@ -506,7 +506,7 @@ async def socket(ws: WebSocket):
         await transport.connect()
         peer = ShopConnection(ws, ticket)
         peer.transport = transport
-        peer.audio = ShopAudioPump(transport, peer.send_json)
+        peer.audio = ShopAudioPump(transport, peer.send_json, gate=ShopSpeechGate())
         connections[ticket["nonce"]] = peer
         last_input = time.monotonic()
         async def receive():
@@ -527,7 +527,10 @@ async def socket(ws: WebSocket):
                     pcm = base64.b64decode(item.get("data", ""), validate=True)
                     if not pcm or len(pcm) % 2 or len(pcm) > 32768:
                         raise ValueError("Invalid PCM")
-                    peer.audio.offer(pcm)
+                    if peer.audio.offer(pcm):
+                        last_input = time.monotonic()
+                        if limit.check("speech-activity", 1, 5).allowed:
+                            await peer.send_json({"type": "user_activity"})
                     continue
                 elif item.get("type") == "text":
                     if not isinstance(item.get("text"), str) or not 1 <= len(item["text"].strip()) <= 2000:
@@ -548,7 +551,9 @@ async def socket(ws: WebSocket):
                 elif item.get("type") == "interrupt":
                     peer.audio.clear()
                     item["audio_end_ms"] = max(0, min(int(item.get("audio_end_ms", 0)), 600000))
-                elif item.get("type") != "audio_end":
+                elif item.get("type") == "audio_end":
+                    peer.audio.finish()
+                else:
                     raise ValueError("Unknown input")
                 await transport.input(item)
         async def emit():

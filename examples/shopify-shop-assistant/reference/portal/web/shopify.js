@@ -65,7 +65,6 @@ async function stopMic(){micNode?.disconnect();micInput?.disconnect();micSilent?
 // Use the same continuous PCM capture as the realtime chat demo. Qwen VAD
 // owns speech boundaries; a browser volume gate must not clip quiet syllables.
 function microphoneFrame(samples){
- let energy=0;for(const sample of samples)energy+=sample*sample;if(samples.length&&Math.sqrt(energy/samples.length)>330)activity();
  if((socket?.bufferedAmount||0)>=65536){message(t('audioSlow'));return;}
  const bytes=new Uint8Array(samples.buffer,samples.byteOffset,samples.byteLength);let encoded='';for(const byte of bytes)encoded+=String.fromCharCode(byte);send({type:'audio',data:btoa(encoded)});
 }
@@ -92,7 +91,7 @@ async function start(){if(running||starting||ending||!current)return;starting=tr
  else if(value.type==='pong'){}
  else if(value.type==='focus'&&value.products?.length&&!manualPinned){candidates=value.products.slice(0,3);renderFocus(candidates[0],value.checked_at);}
  else if(value.type==='policies'){policies(value.shop);}
- else if(value.type==='user_activity'){manualPinned=false;activity(false);}
+ else if(value.type==='user_activity'){manualPinned=false;activity(false);message('');}
  else if(value.type==='user_text'){manualPinned=false;activity(false);bubble('user',value.text);$('#shop-user-turn').textContent=value.text;$('#shop-user-turn').hidden=false;}
  else if(value.type==='text'){output=output||bubble('assistant');output.textContent+=value.delta;$('#shop-subtitle').textContent=output.textContent.slice(-240);$('#shop-welcome').hidden=true;}
  else if(value.type==='audio'){if(!ready||!player)return;if(!source){source=drivePcm(player,{sampleRate:value.sample_rate,maxQueuedMs:10000,playback:!muted});const playback=source;playback.finished.catch(()=>{if(source===playback&&!ending){stopAudio();message(t('turnRetry'));}});playedStart=performance.now();receivedMs=0;}const bytes=Uint8Array.from(atob(value.data),c=>c.charCodeAt(0));source.push(new Int16Array(bytes.buffer));receivedMs+=bytes.length/2/value.sample_rate*1000;}

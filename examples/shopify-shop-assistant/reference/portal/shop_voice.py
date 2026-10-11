@@ -6,6 +6,7 @@ import logging
 import re
 import time
 import uuid
+from collections import deque
 
 from ...core.errors import ApiError
 from .demo_providers import VoiceTransport
@@ -13,26 +14,77 @@ from .demo_providers import VoiceTransport
 logger = logging.getLogger("uvicorn.error.portal.shop_voice")
 
 
+class ShopSpeechGate:
+    """Keep complete speech; omit sustained non-speech before the Qwen uplink."""
+    def __init__(self):
+        import webrtcvad
+        # Conservative WebRTC classifier, not a volume threshold. Quiet speech
+        # and short word gaps retain their original samples at full quality.
+        self.vad = webrtcvad.Vad(1)
+        self.preroll = deque(maxlen=4)
+        self.tail = 0
+        self.pending = b""
+        self.speech_detected = False
+
+    def clear(self):
+        self.preroll.clear()
+        self.tail = 0
+        self.pending = b""
+        self.speech_detected = False
+
+    def feed(self, pcm):
+        self.speech_detected = False
+        self.pending += pcm
+        output = []
+        while len(self.pending) >= 3200:
+            chunk, self.pending = self.pending[:3200], self.pending[3200:]
+            # Feed every 20 ms frame so the detector's noise estimator advances.
+            speech = [self.vad.is_speech(chunk[i:i+640], 16000) for i in range(0, 3200, 640)]
+            if any(speech):
+                self.speech_detected = True
+                self.tail = 12
+            if not self.tail:
+                self.preroll.append(chunk)
+                continue
+            self.tail -= 1
+            output.extend(self.preroll)
+            self.preroll.clear()
+            output.append(chunk)
+        return b"".join(output)
+
+
 class ShopAudioPump:
     """Bound microphone latency without blocking browser control/heartbeat reads."""
-    def __init__(self, transport, warning, *, max_frames=30, max_age=3):
+    def __init__(self, transport, warning, *, max_frames=30, max_age=3, gate=None):
         self.transport, self.warning = transport, warning
+        self.gate = gate
         self.queue = asyncio.Queue(maxsize=max_frames)
         self.max_age = max_age
         self.dropped = 0
         self.last_warning = 0
 
     def clear(self):
+        if self.gate:
+            self.gate.clear()
         while not self.queue.empty():
             self.queue.get_nowait()
 
     def offer(self, pcm):
+        if self.gate:
+            pcm = self.gate.feed(pcm)
         # Accept the validated legacy packet size, but bound by audio duration.
         for offset in range(0, len(pcm), 3200):
             if self.queue.full():
                 self.queue.get_nowait()
                 self.dropped += 1
             self.queue.put_nowait((time.monotonic(), pcm[offset:offset+3200]))
+        return bool(self.gate and self.gate.speech_detected)
+
+    def finish(self):
+        if self.gate:
+            # Turning off the mic immediately after a word must still let the
+            # provider's VAD observe the end, including a partial final packet.
+            self.offer(bytes(38400 + (-len(self.gate.pending) % 3200)))
 
     async def run(self):
         while True:
