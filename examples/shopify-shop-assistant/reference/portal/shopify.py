@@ -28,7 +28,7 @@ from .demo_providers import ProviderSetupError
 from .live_config import read_record, write
 from .livestream import origin, base, cookie_domain, clear_cookie, create_obs_runtime
 from .shop_config import KEY, SCOPES, ShopSettings, load, redacted, save, store_for, shop_domain
-from .shop_client import remote, verify_oauth, verify_webhook, context
+from .shop_client import remote, verify_oauth, verify_webhook, context, METADATA
 from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for
 from .shop_voice import ShopVoice, instructions
 from .schemas import PortalLocale
@@ -263,6 +263,15 @@ async def product(request: Request, db: DatabaseSession, store: str, product: st
     if not limiter.check("product:" + (request.client.host if request.client else ""), 60, 60).allowed:
         raise ApiError(429, "shop_limited", "Try again later")
     return response({"product": await product_detail(store, product, country, lang)})
+
+
+@router.get("/portal/apps/shopify/countries")
+async def countries(request: Request, db: DatabaseSession, store: str, lang: PortalLocale = "en"):
+    configured, _ = public_store(db, store)
+    if not limiter.check("countries:" + (request.client.host if request.client else ""), 60, 60).allowed:
+        raise ApiError(429, "shop_limited", "Try again later")
+    data = await client_for(store).storefront(METADATA, context("US", lang))
+    return response({"countries": data["localization"]["availableCountries"]})
 
 
 @router.get("/portal/apps/shopify/products")
