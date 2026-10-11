@@ -1,0 +1,55 @@
+# Shopify实时店员
+
+[English](README.en.md)
+
+店主授权 Shopify 后，Qwen 3.8 实时模型通过原生工具查询商品、国家价格和店铺政策。Kasamila 数字人语音讲解的商品进入页面主展示区；买家选择规格后创建 Shopify Cart，跳转官方结账。文字、麦克风、打断、15 种界面语言和手机布局均在 Portal 演示中提供。
+
+## 配置现有演示
+
+1. 打开 `https://kasamila.com/api/v1/admin/portal/shopify/manage`。Shopify Client ID / Secret 仅在此填写，服务器加密保存；不要放入网页、挂件或 Git。
+2. 在 Shopify Dev Dashboard 创建可安装到目标店铺的独立应用，设置 application URL 为 `https://www.kasamila.com/portal/apps/shopify`，回调为 `https://www.kasamila.com/portal/apps/shopify/oauth/callback`。注册本目录 TOML 中的 scopes 和 compliance webhooks。启用应用的 Storefront API / sales-channel 访问，并把需要展示的商品发布到该应用的销售渠道。
+3. 添加 `kasamila.myshopify.com` 或其他 canonical `xxx.myshopify.com` 域名。选择已发布数字人、已配置的 Qwen 3.8 通道、音色、人设、内容护栏、默认国家。保存，勾选授权同意后点击“授权店铺管理者”。
+4. 授权成功后点击“同步商品与政策 / 注册更新通知”，再选择全店公开商品，或者勾选集合、Shopify taxonomy 类别、商品。配置与国家事实有关的补充说明；不应填写虚构优惠或发货承诺。勾选发布并保存。
+5. 将实际嵌入网站的 HTTPS origin（包括店铺自定义域名）加入 Admin 允许列表，再复制挂件代码。嵌入需要 HTTPS、父页面麦克风权限及 `allow="microphone; autoplay"`，浏览器仍要求用户点击开始并允许麦克风。
+
+Shopify 授权的是商店公开商品、市场和库存读取权限，不读取客户、订单或付款信息。需要店主安装授权；只有一个店铺链接不足以读取私有商店数据。未发布到应用渠道的商品不会推荐。应用的安装方式受 Shopify 的 distribution 配置和商店资格约束；本示例没有发布到 Shopify App Store。
+
+## 可运行挂件
+
+在任意允许嵌入的网站中加载 `widget.mjs`：
+
+```html
+<div id="assistant"></div>
+<script type="module">
+import {mountAssistant} from './widget.mjs';
+const widget = mountAssistant(document.querySelector('#assistant'), {
+  store: 'kasamila', language: 'zh', height: 850
+});
+// 页面卸载 / 流程结束时：widget.destroy();
+</script>
+```
+
+`extensions/shop-assistant` 是 Shopify theme app block 的基础结构。店主在主题编辑器配置 Portal demo ID 并把商店域名加入允许嵌入列表。`shopify.app.toml` 需替换 Client ID 并关联自己的开发应用后才能部署；它不代表已经完成 App Store 审核。
+
+## 服务端查询和语音工具样例
+
+```sh
+python -m pip install -r requirements.txt
+python -m host.catalog --shop your-store.myshopify.com --country US --language en
+```
+
+CLI 从服务器环境变量 `SHOPIFY_ACCESS_TOKEN` 读取已有店主授权得到的 offline token，仅用于开发者自己的应用测试。它读取全量公开目录和政策，不把令牌写到输出。生产 Portal 的凭据依然全部通过 Admin 配置。到期时需要自己的 OAuth token store 提供 Client ID、Secret 和 refresh token；Portal 参考实现已包含 expiring offline token 自动刷新、加密存储和轮换锁。
+
+`host/client.py` 是与生产共享的 GraphQL / 分页 / 签名验证适配器；`host/voice.py` 是 Qwen 原生工具的 continuation 与取消实现。`reference/portal` 包含完整 Portal 集成参考源码及前端；它依赖 Kasamila Portal 的身份、加密设置、数据库和公开 Runtime API，不能脱离该宿主直接启动。独立产品可以实现相同的存储 / 授权接口，复用 `host` 组件并接入 Kasamila 公开 Runtime 服务；无须修改 Kasamila API 或 SDK。
+
+商品目录按国家与语言分区，更新 webhook 会失效缓存，未收到通知时也按管理员配置的间隔刷新。每次工具推荐、规格展示和创建购物车前再次请求当前产品与国家可用性。Shopify 结账核定实际运费、税费、优惠和最终库存；不能仅凭 Markets 条件推断 B2B、渠道条件或继承策略。退换货来自已公布的店铺政策，缺失信息应回答无法确认。订阅、复杂组合和超过演示数量范围的购买应在商店处理。
+
+会话由访客明确开始，最多 10 分钟，结束后释放 Runtime 和 Qwen 连接；不保存对话记录。商品内容和用户输入均作为不可信资料处理，模型通过提示约束使用查询结果；仍需店主评估人设、内容护栏和回答质量。购物车创建不会自动支付或提交订单。
+
+## 官方参考
+
+- [Shopify standalone OAuth](https://shopify.dev/docs/apps/build/authentication-authorization/authenticate-standalone-apps)
+- [Offline access tokens](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens)
+- [Storefront Cart](https://shopify.dev/docs/api/storefront/latest/mutations/cartCreate)
+- [Mandatory privacy webhooks](https://shopify.dev/docs/apps/build/compliance/privacy-law-compliance)
+- [Qwen 3.8 realtime](https://help.aliyun.com/en/model-studio/qwen3-8-omni-flash-realtime)

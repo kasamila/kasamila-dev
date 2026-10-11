@@ -1,0 +1,25 @@
+# Shopify Live Shop Assistant
+
+[中文](README.md)
+
+The merchant authorizes a Shopify store. Qwen 3.8 realtime calls product and policy tools, then speaks through a Kasamila avatar. The referenced product becomes the main product panel. Shoppers choose a variant and explicitly open a Shopify cart checkout. The Portal demo supports voice, text, interruption, 15 UI languages and mobile layouts.
+
+Configure Client ID / Secret exclusively in [Portal Admin](https://kasamila.com/api/v1/admin/portal/shopify/manage). Create an installable standalone Shopify app with the callback and scopes shown there. Enable Storefront access and publish selected products to the app's channel. Use a canonical `xxx.myshopify.com` domain, a published avatar and its configured Qwen 3.8 realtime channel. Save, authorize as the merchant, synchronize to register update webhooks, select the catalogue range, and publish.
+
+Add each HTTPS embedding origin, including the shop's custom domain, to the Admin allowlist. Use `widget.mjs` or the copied iframe. The parent page must allow microphone delegation; HTTPS, a user gesture and browser permission are required. The theme app block and app TOML are a scaffold for your own registered Shopify app, not an App Store submission or approval.
+
+```js
+import {mountAssistant} from './widget.mjs';
+const widget = mountAssistant(document.querySelector('#assistant'), {
+  store: 'kasamila', language: 'en', height: 850
+});
+// On teardown: widget.destroy();
+```
+
+For a server-side adapter test, install `requirements.txt`, set an already authorized `SHOPIFY_ACCESS_TOKEN` in your own server environment, and run `python -m host.catalog --shop your-store.myshopify.com --country US --language en`. The CLI never outputs credentials. Production Portal credentials remain managed through Admin.
+
+`host/client.py` handles GraphQL queries, full pagination, token refresh hooks, Markets and signature verification. `host/voice.py` handles Qwen native tool outputs and cancellation. `reference/portal` contains the full Portal integration and UI, which depend on the Portal's encrypted settings, database, authentication and public Runtime API. It is reference code, not a standalone runnable server. Supply these adapters for an independent application; no Kasamila API or SDK changes are required.
+
+Product/collection/inventory/market webhooks invalidate country/language caches. The configured refresh interval is a fallback. Product facts are read again before recommendations, focused details and cart creation. Public shop policies and country market settings ground answers; unknown charges and inherited or conditional market rules are confirmed by Shopify checkout. Customer, order and payment data are not requested. Chats are not stored. Sessions require explicit consent, expire after 10 minutes and close Qwen and Runtime resources. Creating a cart does not pay or place an order. Complex subscriptions/bundles and quantities outside demo limits remain handled by the store.
+
+See [Shopify authentication](https://shopify.dev/docs/apps/build/authentication-authorization/authenticate-standalone-apps), [Storefront Cart](https://shopify.dev/docs/api/storefront/latest/mutations/cartCreate), [privacy webhooks](https://shopify.dev/docs/apps/build/compliance/privacy-law-compliance) and [Qwen realtime](https://help.aliyun.com/en/model-studio/qwen3-8-omni-flash-realtime).

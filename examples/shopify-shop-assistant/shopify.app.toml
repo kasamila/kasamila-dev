@@ -1,0 +1,17 @@
+client_id = "REPLACE_WITH_YOUR_SHOPIFY_CLIENT_ID"
+name = "Kasamila Shopify Live Shop Assistant"
+application_url = "https://www.kasamila.com/portal/apps/shopify"
+embedded = false
+
+[access_scopes]
+scopes = "read_products,read_markets,read_inventory,unauthenticated_read_product_listings,unauthenticated_read_product_inventory"
+
+[auth]
+redirect_urls = ["https://www.kasamila.com/portal/apps/shopify/oauth/callback"]
+
+[webhooks]
+api_version = "2026-10"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+uri = "https://www.kasamila.com/portal/apps/shopify/webhooks"
