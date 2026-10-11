@@ -31,7 +31,19 @@ const widget = mountAssistant(document.querySelector('#assistant'), {
 </script>
 ```
 
-`extensions/shop-assistant` 是 Shopify theme app block 的基础结构。店主在主题编辑器配置 Portal demo ID 并把商店域名加入允许嵌入列表。`shopify.app.toml` 需替换 Client ID 并关联自己的开发应用后才能部署；它不代表已经完成 App Store 审核。
+`extensions/shop-assistant` 同时提供页面区块 `assistant.liquid` 和全店悬浮的应用嵌入 `assistant-embed.liquid`。使用全店头像时，先将 `shopify.app.toml` 关联到店主已安装的同一个开发应用，并通过 Shopify CLI 发布包含此主题扩展的应用版本。仅部署 Portal 或推送本示例到 GitHub 不会发布 Shopify 扩展。
+
+发布后，店主打开 **在线商店 → 主题 → 编辑主题（或自定义）→ 应用嵌入 → 实时店员**，开启开关，填写 Kasamila Admin 中**本店对应的商店 ID**，点击保存。Admin 也需发布该商店，并把实际店铺 HTTPS 域名（包括自定义域名）加入允许嵌入列表。头像固定在店铺页面右下角；不需要逐个商品页添加区块。避免同时启用页面区块和应用嵌入，结账步骤不支持此主题扩展。更换主题后需要在新主题重新启用。
+
+安装授权不会自动启用主题中的应用嵌入。可在安装完成后提供以下主题编辑器链接，引导店主预览并保存（`CLIENT_ID` 是公开应用 ID，不是 Secret）：
+
+```text
+https://SHOP.myshopify.com/admin/themes/current/editor?context=apps&template=index&activateAppId=CLIENT_ID/assistant-embed
+```
+
+扩展默认不填写商店 ID，避免其他店铺意外展示示例店商品。主题编辑器支持中英文，消费者界面自动使用已支持的店铺语言，其他语言回退到英语。本示例不代表已部署到任何商店或已通过 App Store 审核。[Shopify 应用嵌入说明](https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration)。
+
+Webhook 地址不填入 OAuth 重定向列表；重定向列表只保留 Admin 显示的 `/oauth/callback`。普通商品、集合、市场等通知由 Admin 的“同步商品与政策 / 注册更新通知”自动注册；三项隐私通知按 `shopify.app.toml` 配置。
 
 ## 服务端查询和语音工具样例
 

@@ -1,0 +1,7 @@
+{
+  "assistant": {
+    "name": "实时店员",
+    "store_id": "Kasamila 商店 ID",
+    "store_help": "填写 Kasamila Admin 中本商店的 ID，并将店铺域名加入允许嵌入列表。保存后头像显示在右下角。应用嵌入和页面区块选择一种即可。"
+  }
+}

@@ -10,6 +10,14 @@ Configure Client ID / Secret exclusively in [Portal Admin](https://kasamila.com/
 
 Add each HTTPS embedding origin, including the shop's custom domain, to the Admin allowlist. Use `widget.mjs` or the module embed copied from Admin. The parent page must allow microphone delegation; HTTPS, a user gesture and browser permission are required. The theme app block and app TOML are a scaffold for your own registered Shopify app, not an App Store submission or approval.
 
+For a store-wide bottom-right avatar, publish `extensions/shop-assistant/blocks/assistant-embed.liquid` as part of the **same Shopify application the merchant installed**, using Shopify CLI and the linked `shopify.app.toml`. Pushing this repository or deploying Portal does not publish a Shopify extension. The existing `assistant.liquid` remains a page-block alternative.
+
+After publishing the extension, the merchant opens **Online Store → Themes → Edit theme (or Customize) → App embeds → Live shop assistant**, enables it, enters this shop's Kasamila Admin store ID, and saves. Publish the shop in Kasamila Admin and allow its actual HTTPS storefront origin. Use either the embed or the page block to avoid duplicate launchers. The embed covers storefront theme pages, not checkout steps. A newly published theme needs its own activation.
+
+App installation and OAuth do not activate theme embeds automatically. An installation flow can open `https://SHOP.myshopify.com/admin/themes/current/editor?context=apps&template=index&activateAppId=CLIENT_ID/assistant-embed` for the merchant to preview and save. `CLIENT_ID` is the public app ID, never the Secret. The embed deliberately has no default store ID, preventing other shops from showing the demo merchant's catalogue. Theme-editor labels support English/Chinese; the shopper UI follows supported shop languages and falls back to English. See [Shopify theme extension configuration](https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration).
+
+The webhook URL does not belong in OAuth Redirect URLs. Keep the Admin-provided `/oauth/callback` there. Admin synchronization registers ordinary product/collection/market update notifications automatically; configure the three mandatory privacy topics through `shopify.app.toml`.
+
 ```js
 import {mountAssistant} from './widget.mjs';
 const widget = mountAssistant(document.querySelector('#assistant'), {

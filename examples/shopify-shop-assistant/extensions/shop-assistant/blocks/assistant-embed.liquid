@@ -1,0 +1,35 @@
+{% assign assistant_locale = request.locale.iso_code | split: '-' | first %}
+{% assign assistant_locales = 'zh,en,fr,de,ru,es,it,ar,ja,ko,th,ms,vi,hi,id' | split: ',' %}
+{% unless assistant_locales contains assistant_locale %}
+  {% assign assistant_locale = 'en' %}
+{% endunless %}
+{% if block.settings.demo_id != blank %}
+<div id="kasamila-assistant-embed-{{ block.id }}"></div>
+<script type="module">
+import {mountAssistant} from 'https://kasamila.com/portal/apps/shopify/widget.js?v=2';
+const target=document.getElementById({{ 'kasamila-assistant-embed-' | append: block.id | json }});
+if(target && !document.querySelector('[data-kasamila-storefront-widget]')){
+  target.setAttribute('data-kasamila-storefront-widget','');
+  const widget=mountAssistant(target,{store:{{ block.settings.demo_id | json }},language:{{ assistant_locale | json }},floating:true});
+  const cleanup=()=>{widget.destroy();target.removeAttribute('data-kasamila-storefront-widget');document.removeEventListener('shopify:section:unload',unload);observer.disconnect();};
+  const unload=event=>{if(event.target.contains(target))cleanup();};
+  const observer=new MutationObserver(()=>{if(!target.isConnected)cleanup();});
+  observer.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('shopify:section:unload',unload);
+}
+</script>
+{% endif %}
+{% schema %}
+{
+  "name": "t:assistant.name",
+  "target": "body",
+  "settings": [
+    {
+      "type": "text",
+      "id": "demo_id",
+      "label": "t:assistant.store_id",
+      "info": "t:assistant.store_help"
+    }
+  ]
+}
+{% endschema %}

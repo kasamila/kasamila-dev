@@ -1,0 +1,7 @@
+{
+  "assistant": {
+    "name": "Live shop assistant",
+    "store_id": "Kasamila store ID",
+    "store_help": "Enter this shop's ID from Kasamila Admin, then add your storefront domain to its allowed embed origins. Save to show the avatar in the bottom-right corner. Use either this embed or the page block."
+  }
+}
