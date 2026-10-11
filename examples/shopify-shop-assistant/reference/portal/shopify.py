@@ -28,7 +28,7 @@ from .demo_providers import ProviderSetupError
 from .live_config import read_record, write
 from .livestream import origin, base, cookie_domain, clear_cookie, create_obs_runtime
 from .shop_config import KEY, SCOPES, ShopSettings, load, redacted, save, store_for, shop_domain
-from .shop_client import remote, verify_oauth, verify_webhook, context, METADATA
+from .shop_client import remote, verify_oauth, verify_webhook, verified_shop_alias, context, METADATA
 from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for
 from .shop_voice import ShopVoice, instructions
 from .schemas import PortalLocale
@@ -131,7 +131,8 @@ async def callback(request: Request, db: DatabaseSession):
         if not verify_oauth(params, value["client_secret"]):
             raise ValueError("Invalid Shopify signature")
         data = open_json(values.get("state", ""), "portal-shopify-oauth")
-        if data["expires"] < time.time() or abs(time.time() - int(values["timestamp"])) > 600 or data["shop"] != shop_domain(values["shop"]) or data["client_id"] != value["client_id"] or not secrets.compare_digest(data["bind"], hashlib.sha256(request.cookies.get(COOKIE, "").encode()).hexdigest()):
+        canonical = shop_domain(values["shop"])
+        if data["expires"] < time.time() or abs(time.time() - int(values["timestamp"])) > 600 or data["client_id"] != value["client_id"] or not secrets.compare_digest(data["bind"], hashlib.sha256(request.cookies.get(COOKIE, "").encode()).hexdigest()):
             raise ValueError("Invalid OAuth binding")
         from .livestream import allowed_origins
         if data["return_origin"] not in allowed_origins(request):
@@ -145,14 +146,21 @@ async def callback(request: Request, db: DatabaseSession):
         db.commit()
         if not values.get("code") or len(values["code"]) > 4096:
             raise ValueError("Missing code")
-        token = await remote(f"https://{data['shop']}/admin/oauth/access_token", {"client_id": value["client_id"], "client_secret": value["client_secret"], "code": values["code"], "expiring": 1})
+        token = await remote(f"https://{canonical}/admin/oauth/access_token", {"client_id": value["client_id"], "client_secret": value["client_secret"], "code": values["code"], "expiring": 1})
         if not set(SCOPES.split(",")).issubset(set(token.get("scope", "").split(","))) or not token.get("refresh_token"):
             raise ApiError(422, "shop_permissions_required", "Approve the configured Shopify scopes and expiring offline access")
         token["expires_at"] = time.time() + token["expires_in"]
+        if canonical != data["shop"]:
+            token["shop_id"] = await verified_shop_alias(data["shop"], canonical, token["access_token"])
         current = read_record(db, KEY, lock=True)
         saved = store_for(current, data["store"])
         if saved["shop"] != data["shop"] or current["client_id"] != data["client_id"] or current["client_secret"] != value["client_secret"]:
             raise ValueError("Configuration changed")
+        if any(s["id"] != saved["id"] and s["shop"] == canonical for s in current["stores"]):
+            raise ApiError(409, "shop_duplicate", "This shop is already configured")
+        if canonical != data["shop"]:
+            saved["shop_aliases"] = sorted(set(saved.get("shop_aliases", []) + [data["shop"]]))
+            saved["shop"] = canonical
         saved["authorization"] = token
         saved.pop("storefront_token", None)
         saved["webhook_event"] = secrets.token_hex(16)
@@ -251,7 +259,7 @@ def catalog(db: DatabaseSession):
 
 @router.get("/portal/apps/shopify/merchants")
 def merchants(db: DatabaseSession):
-    return response({"stores": [{"id": s["id"], "shop": s["shop"]} for s in load(db)["stores"]]})
+    return response({"stores": [{"id": s["id"], "shop": host} for s in load(db)["stores"] for host in [s["shop"], *s.get("shop_aliases", [])]]})
 
 
 @router.get("/portal/apps/shopify/product")

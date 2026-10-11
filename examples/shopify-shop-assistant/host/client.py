@@ -62,6 +62,19 @@ async def remote(url, payload, headers=None):
             return data
 
 
+async def verified_shop_alias(requested, canonical, token):
+    """A signed callback may use the original domain of a renamed shop."""
+    requested, canonical = shop_domain(requested), shop_domain(canonical)
+    data = await remote(f"https://{canonical}/admin/api/{VERSION}/graphql.json",
+                        {"query": "query { shop { id myshopifyDomain domains { host } } }"},
+                        {"X-Shopify-Access-Token": token})
+    shop = data.get("data", {}).get("shop") or {}
+    hosts = {str(d.get("host", "")).lower() for d in shop.get("domains", [])}
+    if shop.get("myshopifyDomain", "").lower() != canonical or requested not in hosts or not shop.get("id"):
+        raise ApiError(422, "shop_domain_mismatch", "The authorized shop does not own the configured domain")
+    return shop["id"]
+
+
 class Shopify:
     def __init__(self, store, settings, persist, reload=None):
         self.store, self.settings, self.persist = store, settings, persist

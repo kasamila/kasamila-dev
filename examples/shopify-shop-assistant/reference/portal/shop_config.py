@@ -96,6 +96,7 @@ def redacted(value):
         store.pop("storefront_token", None)
         store.pop("webhooks", None)
         store.pop("webhook_event", None)
+        store.pop("shop_aliases", None)
     return result
 
 
@@ -107,8 +108,10 @@ def save(db, request, admin, payload):
     actors = {row["id"]: row for row in public_catalog(db)["avatars"]}
     for store in value["stores"]:
         previous = next((s for s in old["stores"] if s["id"] == store["id"]), {})
+        if store["shop"] in previous.get("shop_aliases", []) and old["client_id"] == value["client_id"] and old["client_secret"] == value["client_secret"]:
+            store["shop"] = previous["shop"]
         if previous.get("shop") == store["shop"] and old["client_id"] == value["client_id"] and old["client_secret"] == value["client_secret"]:
-            for key in ("authorization", "storefront_token", "webhooks", "webhook_event"):
+            for key in ("authorization", "storefront_token", "webhooks", "webhook_event", "shop_aliases"):
                 if key in previous:
                     store[key] = previous[key]
         if store["enabled"]:

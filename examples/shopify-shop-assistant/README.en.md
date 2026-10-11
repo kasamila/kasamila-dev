@@ -1,5 +1,7 @@
 # Shopify Live Shop Assistant
 
+Renamed shops can return their original `myshopify.com` domain in the OAuth callback. After signature, browser binding and one-time state validation, Portal checks the authorized shop's domain list before saving that canonical domain. The verified previous name remains usable for starting authorization.
+
 [中文](README.md)
 
 The merchant authorizes a Shopify store. Qwen 3.8 realtime calls product and policy tools, then speaks through a Kasamila avatar. The referenced product becomes the main product panel. Shoppers choose a variant and explicitly open a Shopify cart checkout. The Portal demo supports voice, text, interruption, 15 UI languages and mobile layouts.
