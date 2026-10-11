@@ -31,7 +31,7 @@ from .livestream import origin, base, cookie_domain, clear_cookie, create_obs_ru
 from .shop_config import KEY, SCOPES, ShopSettings, load, redacted, save, store_for, shop_domain
 from .shop_client import remote, verify_oauth, verify_webhook, verified_shop_alias, context, METADATA
 from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for, warm_catalogs, refresh_tasks
-from .shop_voice import ShopVoice, instructions
+from .shop_voice import ShopVoice, ShopAudioPump, instructions
 from .schemas import PortalLocale
 
 router = APIRouter(include_in_schema=False)
@@ -467,6 +467,8 @@ async def socket(ws: WebSocket):
             # Its original idle/Runtime/600-second deadlines never move.
             if not limiter.check("resume:" + ticket["nonce"], 12, 60).allowed:
                 raise ValueError("Reconnect limit")
+            if hasattr(existing, "audio"):
+                existing.audio.clear()
             await existing.transport.input({"type": "interrupt", "audio_end_ms": 0})
             await existing.attach(ws)
             await existing.send_json({"type": "ready", "input_rate": existing.transport.input_rate, "resumed": True})
@@ -502,6 +504,7 @@ async def socket(ws: WebSocket):
         await transport.connect()
         peer = ShopConnection(ws, ticket)
         peer.transport = transport
+        peer.audio = ShopAudioPump(transport, peer.send_json)
         connections[ticket["nonce"]] = peer
         last_input = time.monotonic()
         async def receive():
@@ -522,6 +525,8 @@ async def socket(ws: WebSocket):
                     pcm = base64.b64decode(item.get("data", ""), validate=True)
                     if not pcm or len(pcm) % 2 or len(pcm) > 32768:
                         raise ValueError("Invalid PCM")
+                    peer.audio.offer(pcm)
+                    continue
                 elif item.get("type") == "text":
                     if not isinstance(item.get("text"), str) or not 1 <= len(item["text"].strip()) <= 2000:
                         raise ValueError("Invalid text")
@@ -529,6 +534,7 @@ async def socket(ws: WebSocket):
                         await peer.send_json({"type": "warning", "code": "shop_limited"})
                         continue
                     last_input = time.monotonic()
+                    peer.audio.clear()
                 elif item.get("type") == "activity":
                     if limit.check("activity", 30, 60).allowed:
                         last_input = time.monotonic()
@@ -538,6 +544,7 @@ async def socket(ws: WebSocket):
                         raise ValueError("Invalid product context")
                     last_input = time.monotonic()
                 elif item.get("type") == "interrupt":
+                    peer.audio.clear()
                     item["audio_end_ms"] = max(0, min(int(item.get("audio_end_ms", 0)), 600000))
                 elif item.get("type") != "audio_end":
                     raise ValueError("Unknown input")
@@ -557,7 +564,7 @@ async def socket(ws: WebSocket):
             nonlocal close_reason
             close_reason = "shop_idle"
             await peer.send_json(event)
-        tasks = [asyncio.create_task(receive()), asyncio.create_task(emit()), asyncio.create_task(wait_for_inactivity(lambda: last_input, idle_event))]
+        tasks = [asyncio.create_task(receive()), asyncio.create_task(emit()), asyncio.create_task(peer.audio.run()), asyncio.create_task(wait_for_inactivity(lambda: last_input, idle_event))]
         completed, _ = await asyncio.wait(tasks, timeout=600, return_when=asyncio.FIRST_COMPLETED)
         if not completed:
             close_reason = "shop_session_limit"

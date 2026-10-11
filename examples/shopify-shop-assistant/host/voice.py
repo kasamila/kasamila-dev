@@ -1,5 +1,6 @@
 """Qwen realtime tools specific to the shop demo; shared chat transport is unchanged."""
 import asyncio
+import base64
 import json
 import logging
 import re
@@ -9,7 +10,42 @@ import uuid
 from .errors import ApiError
 from .providers import VoiceTransport
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error.portal.shop_voice")
+
+
+class ShopAudioPump:
+    """Bound microphone latency without blocking browser control/heartbeat reads."""
+    def __init__(self, transport, warning, *, max_frames=12, max_age=1.2):
+        self.transport, self.warning = transport, warning
+        self.queue = asyncio.Queue(maxsize=max_frames)
+        self.max_age = max_age
+        self.dropped = 0
+        self.last_warning = 0
+
+    def clear(self):
+        while not self.queue.empty():
+            self.queue.get_nowait()
+
+    def offer(self, pcm):
+        # Accept the validated legacy packet size, but bound by audio duration.
+        for offset in range(0, len(pcm), 3200):
+            if self.queue.full():
+                self.queue.get_nowait()
+                self.dropped += 1
+            self.queue.put_nowait((time.monotonic(), pcm[offset:offset+3200]))
+
+    async def run(self):
+        while True:
+            queued, pcm = await self.queue.get()
+            if time.monotonic()-queued > self.max_age:
+                self.dropped += 1
+            else:
+                await self.transport.input({"type": "audio", "data": base64.b64encode(pcm).decode()})
+            if self.dropped and time.monotonic()-self.last_warning > 10:
+                logger.warning("shop_audio_backpressure dropped_frames=%d", self.dropped)
+                self.dropped = 0
+                self.last_warning = time.monotonic()
+                await self.warning({"type": "warning", "code": "shop_audio_backpressure"})
 
 TOOLS = [{"type": "function", "function": {"name": name, "description": description, "parameters": {"type": "object", "properties": properties, "required": list(properties), "additionalProperties": False}}} for name, description, properties in (
     ("search_catalog", "Find up to three verified products for the shopper's country and spotlight the first. Answer directly from these facts. Use an empty query to browse.", {"query": {"type": "string"}}),
@@ -56,6 +92,18 @@ class ShopVoice(VoiceTransport):
         self.transcript = ""
         self.focus_id = None
         self.output_events = None
+
+    async def connect(self):
+        await super().connect()
+        # Scope write buffering to this Qwen connection. Unbounded PCM queued on
+        # a slow upstream used to delay VAD and block the browser's pong reader.
+        self.ws.transport.set_write_buffer_limits(high=8192, low=2048)
+        import socket
+        sock = self.ws.transport.get_extra_info("socket")
+        if sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 16384)
+            if hasattr(socket, "TCP_NOTSENT_LOWAT"):
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NOTSENT_LOWAT, 8192)
 
     async def _tool(self, name, args):
         started = time.monotonic()
@@ -121,6 +169,7 @@ class ShopVoice(VoiceTransport):
     async def send(self, value):
         if value.get("type") == "session.update":
             value["session"].update(tools=TOOLS, enable_search=False, max_tokens=700)
+            value["session"]["turn_detection"] = {"type": "server_vad", "threshold": .5, "silence_duration_ms": 800}
         if value.get("type") == "response.cancel":
             value["event_id"] = "cancel_" + uuid.uuid4().hex
             self.cancel_events.add(value["event_id"])

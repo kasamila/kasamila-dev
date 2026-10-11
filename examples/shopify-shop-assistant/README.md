@@ -79,3 +79,7 @@ CLI 从服务器环境变量 `SHOPIFY_ACCESS_TOKEN` 读取已有店主授权得�
 ### Brief network interruptions
 
 The Portal reference sends a ten-second ping/pong heartbeat that does not reset the shopper inactivity deadline. Browser disconnects retry for fifteen seconds; the backend retains the existing Qwen conversation and Runtime for a twenty-second reconnect window. Resume requires the same signed ticket, origin and IP and a still-live server session. It preserves product focus and chat history without creating a new billable session or replaying stale audio. Explicit close, two-minute inactivity and the original ten-minute demo limit still release resources.
+
+### Continuous microphone backpressure
+
+The reference skips long near-silence while preserving a 300 ms onset pre-roll and a 1.2-second trailing VAD window. Browser writes are bounded at 64 KiB. The host uses a separate bounded audio pump so slow upstream writes cannot block browser heartbeats and controls; Qwen write buffering is bounded per connection. If speech cannot be delivered in time, a localized warning asks the visitor to repeat it. A late application pong is not treated as proof of disconnection. These controls apply to the Shopify demo only.
