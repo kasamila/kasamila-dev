@@ -139,8 +139,9 @@ class Shopify:
 
     async def markets(self, country):
         regions = 'nodes{... on MarketRegionCountry{code name currency{currencyCode}}} ' + PAGE
-        fields = 'id name status type currencySettings{baseCurrency{currencyCode} localCurrencies roundingEnabled} priceInclusions{inclusiveDutiesPricingStrategy inclusiveTaxPricingStrategy} delivery{shipping{isEnabled}} conditions{conditionTypes regionsCondition{regions(first:250){' + regions + '}}}'
-        markets = await self.connection("markets", 'query($after:String){markets(first:50,after:$after){nodes{' + fields + '} ' + PAGE + '}}')
+        # Bound requested Admin query cost; nested connections multiply cost.
+        fields = 'id name status type currencySettings{baseCurrency{currencyCode} localCurrencies roundingEnabled} priceInclusions{inclusiveDutiesPricingStrategy inclusiveTaxPricingStrategy} delivery{shipping{isEnabled}} conditions{conditionTypes regionsCondition{regions(first:50){' + regions + '}}}'
+        markets = await self.connection("markets", 'query($after:String){markets(first:10,after:$after){nodes{' + fields + '} ' + PAGE + '}}')
         result = []
         for market in markets:
             conditions = market.get("conditions") or {}
