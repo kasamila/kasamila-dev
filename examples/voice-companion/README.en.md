@@ -1,27 +1,39 @@
-# Kasamila Voice Companion — extension preview
+# Kasamila Voice Companion 0.4.0 — extension preview
 
-Desktop Chrome / Edge 116+, Manifest V3. Animate a Kasamila avatar using audio from a user-selected HTTP(S) tab. It is not limited to ChatGPT: web speech, AI replies and other capturable audio work through the same bridge. Music and alerts are captured too. Protected content, internal browser pages and mobile browsers are outside the initial support target.
+Desktop Chrome / Edge 116+, Manifest V3. Click the extension on a selected HTTPS page (or localhost) to animate an avatar with that tab’s audio. Works with capturable web audio, including AI replies, web speech, music and alerts. Protected media, internal browser pages and mobile browsers are unsupported.
 
-## Install
+## Use
 
-Unzip the package. Open `chrome://extensions` or `edge://extensions`, enable Developer mode, choose **Load unpacked**, and select `extension`. Pin the toolbar icon. On the source page, click the icon (or `Alt+Shift+K`), select an avatar in the companion window, accept the audio disclosure, and enable it. Continue using the source site's microphone and conversation controls.
+1. Unzip, enable Developer mode at `chrome://extensions` or `edge://extensions`, load the `extension` folder and pin Kasamila.
+2. Click the toolbar icon (or `Alt+Shift+K`) on the source page. A single always-on-top window opens at approximately 280 × 330; drag or resize it as needed.
+3. First use: choose an avatar, read and accept the audio disclosure, then enable it. The avatar and consent stay in local browser storage; subsequent toolbar clicks connect automatically.
+4. Use ⚙ in the corner to configure the avatar. Settings release the old Runtime while tab capture continues. Enable again to apply. Unchecking consent cancels future automatic connection. ■ stops capture and inference. The bottom indicator lights when web audio is captured.
+5. There is no controller window, bitmap mirror, window handoff or return connection. Silence, reply completion and same-document routing keep the session alive. Closing PiP or the source tab, and full reload/navigation destroying the source document, stop it. Click the toolbar to reconnect using saved settings. Admin duration, concurrency and rate limits still apply.
+6. Continue speaking through the original website. Source audio plays once; avatar playback is disabled to prevent echo. The companion follows speech and does not generate replies.
 
-Click **Always-on-top window** for a circular avatar in Document Picture-in-Picture (the browser retains its rectangular outer frame). The avatar renders directly inside PiP; once connected, the controller minimizes automatically. Closing PiP restores the controller and reconnects automatically. Each switch releases the old Runtime and connects once, preserving the avatar, consent and remaining duration while tab capture continues. PiP no longer depends on background canvas copies. Keep the controller alive: the browser closes PiP if its opener closes. Silence, reply completion and same-origin navigation/reloads do not stop capture. Stop, closing the companion window/source, or cross-origin navigation ends capture. Admin session expiry still requires manual reconnection.
+**Upgrade to 0.4.0:** close previous companion windows, replace unpacked files, reload the extension and accept any browser prompt for added permissions. Click the toolbar icon on the source page. Refreshing the website alone does not upgrade the extension.
 
-Upgrade to 0.3.0: replace unpacked files, click **Reload** in extension management, then click the toolbar icon on the source page. Refreshing the page alone does not upgrade the extension. Failures identify safe categories and recovery actions, without credentials, stream IDs or private URL paths. This is an unpacked preview, not a reviewed Chrome Web Store / Edge Add-ons listing.
+## Permissions and data
 
-## Boundaries
+`Selected tab → tabCapture → offscreen AudioWorklet → extension iframe inside PiP → same-origin Portal frames → existing SDK`
 
-Only `activeTab`, `tabCapture`, `offscreen` permissions are requested. No content scripts, microphone access, broad host permissions or audio persistence. A packaged AudioWorklet downmixes/resamples to 16 kHz PCM16 in 40 ms packets. Eight outstanding packets bound transport backlog; excess and stale PCM is dropped without destroying the avatar. An independent offscreen heartbeat keeps the control connection alive through silence. Original audio is restored once; the avatar uses `playback:false`.
+- `activeTab`, `tabCapture`: capture only the tab selected by a user action.
+- `offscreen`: process audio and restore source playback.
+- `scripting`: inject an isolated function only after that action, solely to create PiP. It does not read page text, accounts or application internals.
+- `storage`: locally store avatar ID, consent and configuration version. No audio, transcript, key or Runtime Token is stored.
 
-The hosted avatar runs in an isolated web iframe with a same-origin inner wrapper for the published SDK. The extension accepts only limited messages from the fixed Kasamila origin and its frame. Remote code cannot invoke arbitrary extension APIs. No permanent key or Runtime Token crosses the extension bridge. Audio-only capture provides no official turn/interruption events from the source website. Lip movement has capture/inference latency; actual-site interruption and echo behavior still need testing.
+No global host permissions, microphone permission, automatic content scripts or remote extension scripts. Only `panel.html` is exposed for embedding, and its background connection requires the current user-initiated launch identifier. The Portal bridge checks its extension parent and fixed Kasamila origin. Tokens never cross the extension bridge.
 
-The included extension connects to the hosted Kasamila Portal demo. Admin controls the dedicated Runtime Key, public avatars, companion switch, duration and concurrency. Voice-provider configuration is unnecessary: the source site determines speech, voice, persona and content. The service uses short-lived Origin-bound Runtime Tokens and releases sessions on disconnect, expiry or missing heartbeats. Existing API and SDK code are unchanged.
+Audio is 16 kHz PCM16 in 40 ms packets. At most eight packets await acknowledgement; expired acknowledgements are reclaimed so a lost message cannot permanently stall speech. An independent offscreen heartbeat maintains the connection through silence.
 
-For self-hosting, implement the same consent, authentication, quota, Origin, heartbeat and cleanup boundaries, and update the extension's fixed URL and iframe CSP to your trusted host. Never embed a permanent API key in the extension. Main-project references: `kasamila_api/modules/portal/companion.py` and `web/portal/companion*`.
+## Hosted service
 
-Before store publication, complete platform review and privacy disclosures, and verify real target websites, long-running sessions, interruptions and speaker/microphone echo. Automated checks do not establish compatibility with every website.
+Admin controls the dedicated Runtime Key, public avatars, companion switch, duration, concurrency and rate limits. No voice-model configuration is needed. This hosted demo is not unlimited free inference.
 
-## Regression coverage
+Only mini-mode embed responses add the validated source-page Origin to their CSP ancestor list. Inference still uses short-lived tokens for the Portal origin; no inference-key domain whitelist is widened. Self-hosted implementations must preserve consent, quotas, Origin, heartbeat and cleanup boundaries. Reference implementation: `kasamila_api/modules/portal/companion.py` and `web/portal/companion*`. Existing API/SDK code is unchanged.
 
-The isolated browser test uses a real toolbar action/activeTab grant (no capture allowlist), WebRTC remote audio, 36 seconds of silence and a subsequent reply, consumer backpressure, same-origin navigation/reload, direct PiP rendering with the owner minimized, native/button close and automatic return, and remaining-duration handoff. Background throttling stays enabled. Switches remain subject to Admin concurrency and IP rate limits. Actual hosted Runtime and immutable SDK tests are separate. These checks do not claim compatibility with every third-party voice product.
+## Validation
+
+Isolated browser tests use real toolbar permissions and WebRTC audio, covering initial consent, stored automatic connection, 36 seconds of silence, lost acknowledgements, minimized source windows, settings and Stop. Background throttling stays enabled. Separate hosted-Runtime tests measure actual mouth motion, audio-clock progress and rendered frames. These checks do not establish compatibility with every website or network.
+
+This is an unpacked preview, not a reviewed Chrome Web Store / Edge Add-ons listing. Lip motion has capture and inference latency.
