@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kasamila Voice Companion",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Animate a Kasamila avatar with audio from the tab you explicitly select.",
   "minimum_chrome_version": "116",
   "permissions": [

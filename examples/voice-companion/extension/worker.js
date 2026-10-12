@@ -87,6 +87,9 @@ chrome.runtime.onConnect.addListener(port=>{
       if(message.type==='not-ready'){ready=false;pending.clear();}
       if(message.type==='ack')pending.delete(message.sequence);
       if(message.type==='stop')void stop();
+      if(['minimize','restore-window'].includes(message.type)&&Number.isInteger(port.sender.tab?.windowId)){
+        void chrome.windows.update(port.sender.tab.windowId,message.type==='minimize'?{state:'minimized'}:{state:'normal',focused:true}).catch(()=>{});
+      }
     });
     port.onDisconnect.addListener(()=>{if(panelPort===port){panelPort=null;void stop();}});
   }
