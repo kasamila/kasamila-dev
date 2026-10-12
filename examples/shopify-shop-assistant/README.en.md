@@ -46,3 +46,5 @@ Eligible catalogue snapshots are read before waiting for the refresh lock. Voice
 ## Mobile startup
 
 Avatar preparation and voice connection have separate status messages. Voice admission is requested after the avatar is ready, with a three-minute deadline covering the entire startup. Cancellation cleans up late initialization results. If the browser suspends audio, tap the audio activation button. Shopify starts its two-minute inactivity timer only after connecting. These are application-layer changes; the Kasamila API, SDK and mouth models are unchanged.
+
+Portal also waits for presented avatar video frames before voice admission; metadata alone is insufficient. A poster covers loading or buffering, playback blocks expose a user-gesture button, and persistent missing frames or decoding errors end with a retry message. The monitor does not rewrite SDK mouth rendering, frame callbacks, or geometry timelines.

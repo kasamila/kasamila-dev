@@ -1,6 +1,7 @@
-import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=1';
+import {DemoVideo} from './demo-video.js?v=1';
+import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=2';
 import {language,localizedPortalUrl} from './i18n.js?v=20';
-import {demoText} from './demo-copy.js?v=5';
+import {demoText} from './demo-copy.js?v=6';
 import {shopText as t} from './shopify-copy.js?v=6';
 import {drivePcm} from './examples/audio-bridge/bridge.mjs';
 const $=s=>document.querySelector(s),params=new URLSearchParams(location.search),embedded=location.pathname.endsWith('/embed');
@@ -10,7 +11,7 @@ document.body.classList.toggle('shop-embed',embedded);
 if(typeof window.start_new_round!=='function')window.start_new_round=async()=>{};
 let stores=[],current=null,products=[],candidates=[],focus=null,next=null,requestVersion=0,focusVersion=0,selecting=null,syncedAt=null,manualPinned=false,expanded=false;
 let player=null,socket=null,source=null,bootstrap=null,context=null,micStream=null,micNode=null,micInput=null,micSilent=null,output=null;
-let running=false,starting=false,ending=false,ready=false,muted=false,sessionVersion=0,inputRate=16000,playedStart=0,receivedMs=0,sessionTimer=null,startup=null,pendingPlayer=null,idleTimer=null,lastInput=0,lastActivitySent=0;
+let running=false,starting=false,ending=false,ready=false,muted=false,sessionVersion=0,inputRate=16000,playedStart=0,receivedMs=0,sessionTimer=null,startup=null,pendingPlayer=null,media=null,mediaReady=false,idleTimer=null,lastInput=0,lastActivitySent=0;
 let heartbeatTimer=null,reconnectTimer=null,reconnectDeadlineTimer=null,reconnecting=false,reconnectStarted=0,reconnectAttempts=0,lastPong=0;
 function message(value){$('#shop-message').textContent=value;$('#shop-launch-status').textContent=expanded?'':value;}
 function status(value){$('#shop-status').textContent=value;}
@@ -74,7 +75,7 @@ async function toggleMic(){const attempt=sessionVersion,audioContext=context;if(
 
 async function end(note=demoText('ended'),collapse=false){
  if(collapse){panel(false);for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();}
- if(ending)return;send({type:'leave'});ending=true;sessionVersion++;requestVersion++;focusVersion++;ready=running=starting=false;clearTimeout(sessionTimer);startup?.close();startup=null;clearTimeout(idleTimer);clearInterval(heartbeatTimer);clearTimeout(reconnectTimer);clearTimeout(reconnectDeadlineTimer);reconnecting=false;controls();
+ if(ending)return;send({type:'leave'});ending=true;sessionVersion++;requestVersion++;focusVersion++;ready=running=starting=false;clearTimeout(sessionTimer);startup?.close();startup=null;media?.close();media=null;mediaReady=false;clearTimeout(idleTimer);clearInterval(heartbeatTimer);clearTimeout(reconnectTimer);clearTimeout(reconnectDeadlineTimer);reconnecting=false;controls();
  const oldBootstrap=bootstrap;bootstrap=null;const old=player||pendingPlayer;player=pendingPlayer=null;const oldContext=context;context=null;const oldSocket=socket;socket=null;
  await stopMic();oldSocket?.close();stopAudio();await disposeDemoAvatar(old,oldBootstrap);try{await oldContext?.close();}catch{}
 
@@ -85,13 +86,18 @@ async function start(){if(running||starting||ending||!current)return;starting=tr
  try{context=new AudioContext();guard.bind(null,context);await context.resume();if(attempt!==sessionVersion)return;const result=await api('sessions',{...buyer(),consent:true});if(attempt!==sessionVersion){await releaseDemoRuntime(result);return;}bootstrap=result;
  const apiBase=result.api_base||location.origin;const {loadKasamila}=await import(new URL('/sdk/bootstrap/1/loader.mjs',apiBase).href);const Kasamila=await loadKasamila(result.runtime.sdk,apiBase);if(attempt!==sessionVersion)return;
  const element=document.createElement('kasamila-avatar');pendingPlayer=element;guard.bind(element,context);$('#shop-stage').replaceChildren(element);element.addEventListener('kasamila-error',()=>{if(attempt===sessionVersion)void end(demoText('failed'));});
+ const presentation=media=new DemoVideo($('#shop-stage'),current.avatar.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp',{
+  onState(available){if(attempt!==sessionVersion||ending)return;mediaReady=available;if(running){if(!available)interrupt();ready=available&&!reconnecting;status(demoText(available?(reconnecting?'connectingVoice':'connected'):'videoBuffering'));controls();}},
+  onFailure(note){if(attempt===sessionVersion)void end(note);}
+ });
  const created=await Kasamila.create({element,sessionToken:result.runtime.client_token,templateMedia:result.template_media,providerPreview:!result.template_media});if(attempt!==sessionVersion){await disposeDemoAvatar(created,result);return;}player=created;pendingPlayer=null;
+ guard.video(presentation);await presentation.wait(created);if(attempt!==sessionVersion)return;
  guard.connecting();const ticket=await voiceTicket('/portal/apps/shopify/voice-ticket',result,guard.signal);if(attempt!==sessionVersion)return;
  function connectSocket(resume=false){
  const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/portal/apps/shopify/socket');socket=ws;ws.onopen=()=>{if(attempt===sessionVersion&&socket===ws)send({ticket,resume});};
  const retry=()=>{if(attempt!==sessionVersion||socket!==ws||ending)return;if(!running){void end(demoText('failed'));return;}if(!reconnecting){reconnecting=true;reconnectStarted=Date.now();reconnectAttempts=0;reconnectDeadlineTimer=setTimeout(()=>{if(attempt===sessionVersion&&reconnecting&&!ending)void end(t('connectionLost'));},15000);stopAudio();ready=false;controls();status(t('reconnecting'));}if(Date.now()-reconnectStarted>=15000){void end(t('connectionLost'));return;}socket=null;ws.close();clearTimeout(reconnectTimer);reconnectTimer=setTimeout(()=>{if(attempt===sessionVersion&&!ending)connectSocket(true);},Math.min(500*2**reconnectAttempts++,3000));};
  ws.onmessage=event=>{if(attempt!==sessionVersion||socket!==ws)return;lastPong=Date.now();try{const value=JSON.parse(event.data);
- if(value.type==='ready'){guard.complete();clearTimeout(reconnectTimer);clearTimeout(reconnectDeadlineTimer);const resumed=reconnecting;reconnecting=false;ready=running=true;starting=false;inputRate=value.input_rate;status(demoText('connected'));controls();if(!resumed){activity();sessionTimer=setTimeout(()=>void end(t('sessionLimit')),result.duration*1000);}else{message(t('reconnected'));if(lastInput>lastActivitySent){lastActivitySent=lastInput;send({type:'activity'});}}clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>{if(attempt!==sessionVersion||ending)return;if(reconnecting){if(Date.now()-reconnectStarted>=15000)void end(t('connectionLost'));return;}send({type:'ping'});},10000);}
+ if(value.type==='ready'){guard.complete();clearTimeout(reconnectTimer);clearTimeout(reconnectDeadlineTimer);const resumed=reconnecting;reconnecting=false;running=true;ready=mediaReady;starting=false;inputRate=value.input_rate;status(demoText(mediaReady?'connected':'videoBuffering'));controls();if(!resumed){activity();sessionTimer=setTimeout(()=>void end(t('sessionLimit')),result.duration*1000);}else{message(t('reconnected'));if(lastInput>lastActivitySent){lastActivitySent=lastInput;send({type:'activity'});}}clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>{if(attempt!==sessionVersion||ending)return;if(reconnecting){if(Date.now()-reconnectStarted>=15000)void end(t('connectionLost'));return;}send({type:'ping'});},10000);}
  else if(value.type==='pong'){}
  else if(value.type==='focus'&&value.products?.length&&!manualPinned){candidates=value.products.slice(0,3);renderFocus(candidates[0],value.checked_at);}
  else if(value.type==='policies'){policies(value.shop);}

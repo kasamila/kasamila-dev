@@ -1,4 +1,4 @@
-import {demoText} from './demo-copy.js?v=5';
+import {demoText} from './demo-copy.js?v=6';
 
 // Own the entire startup deadline, including fetch/import/model/audio waits.
 // Keep the audio recovery control after startup for mobile foreground resumes.
@@ -8,6 +8,7 @@ export class DemoStartup {
   this.button=document.createElement('button');this.button.type='button';this.button.hidden=true;
   this.button.className='demo-audio-activate';anchor.after(this.button);
   this.button.onclick=()=>{
+   this.media?.resume();
    // Call resume directly in the trusted click, before any asynchronous work.
    for(const ctx of this.contexts())if(ctx.state!=='running')Promise.resolve(ctx.resume()).catch(()=>{});
   };
@@ -19,9 +20,13 @@ export class DemoStartup {
  bind(element,context){this.element=element;this.context=context;this.update();}
  update(){
   const blocked=this.contexts().some(ctx=>['suspended','interrupted'].includes(ctx.state));
-  this.button.hidden=!blocked;this.button.textContent=demoText('enableAudio');
-  if(this.phase)this.status(demoText(blocked?'audioBlocked':this.phase));
+  const videoBlocked=this.media?.needsGesture;
+  this.button.hidden=!blocked&&!videoBlocked;
+  this.button.textContent=demoText(videoBlocked?'enableVideo':'enableAudio');
+  const key=this.phase?(blocked?'audioBlocked':videoBlocked?'videoBlocked':this.phase):null;
+  if(key&&key!==this.lastStatus){this.lastStatus=key;this.status(demoText(key));}
  }
+ video(media){this.media=media;this.phase='loadingVideo';this.update();}
  connecting(){this.phase='connectingVoice';this.update();}
  complete(){clearTimeout(this.timer);this.phase=null;this.update();}
  close(){clearTimeout(this.timer);clearInterval(this.poll);this.controller.abort();this.button.remove();}

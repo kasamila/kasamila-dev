@@ -78,3 +78,23 @@ const startupRows={
  id:['Menyiapkan avatar. Pemuatan pertama mungkin memerlukan waktu…','Menghubungkan saluran suara…','Ketuk untuk mengaktifkan audio','Browser menjeda audio. Ketuk untuk mengaktifkannya.','Waktu persiapan habis. Coba lagi; sumber daya yang diunduh biasanya dapat digunakan kembali.'],
 };
 for(const [locale,row] of Object.entries(startupRows))startupKeys.forEach((key,index)=>demoCatalogs[locale][key]=row[index]);
+
+const videoKeys=['loadingVideo','videoBuffering','enableVideo','videoBlocked','videoFailed'];
+const videoRows={
+ zh:['正在加载人物视频…','人物视频正在缓冲，恢复后可继续对话。','点击播放人物视频','浏览器暂停了人物视频，请点击播放。','人物视频未能正常播放，请重新开始聊天。'],
+ en:['Loading the avatar video…','Avatar video is buffering. Chat resumes when it is ready.','Tap to play the avatar video','Your browser paused the avatar video. Tap to play.','The avatar video could not play. Please restart the chat.'],
+ fr:['Chargement de la vidéo de l’avatar…','Vidéo en mémoire tampon. La conversation reprendra ensuite.','Lire la vidéo de l’avatar','Le navigateur a suspendu la vidéo. Appuyez pour la lire.','La vidéo n’a pas pu être lue. Relancez la conversation.'],
+ de:['Avatar-Video wird geladen…','Avatar-Video wird gepuffert. Danach geht der Chat weiter.','Avatar-Video abspielen','Der Browser hat das Video pausiert. Zum Abspielen tippen.','Das Avatar-Video konnte nicht abgespielt werden. Chat neu starten.'],
+ ru:['Загрузка видео аватара…','Видео буферизуется. Разговор продолжится после загрузки.','Воспроизвести видео аватара','Браузер приостановил видео. Нажмите для воспроизведения.','Не удалось воспроизвести видео. Начните разговор заново.'],
+ es:['Cargando el vídeo del avatar…','El vídeo está cargando. La conversación se reanudará después.','Reproducir vídeo del avatar','El navegador pausó el vídeo. Pulsa para reproducirlo.','No se pudo reproducir el vídeo. Reinicia la conversación.'],
+ it:['Caricamento del video dell’avatar…','Video in caricamento. La chat riprenderà quando sarà pronto.','Riproduci il video dell’avatar','Il browser ha sospeso il video. Tocca per riprodurlo.','Impossibile riprodurre il video. Riavvia la chat.'],
+ ar:['جارٍ تحميل فيديو الشخصية…','جارٍ تخزين الفيديو مؤقتًا. تُستأنف المحادثة عندما يصبح جاهزًا.','اضغط لتشغيل فيديو الشخصية','أوقف المتصفح الفيديو مؤقتًا. اضغط لتشغيله.','تعذر تشغيل فيديو الشخصية. يرجى بدء المحادثة مجددًا.'],
+ ja:['アバター動画を読み込み中…','動画をバッファリング中です。準備ができると会話を再開できます。','タップしてアバター動画を再生','ブラウザーが動画を一時停止しました。タップして再生してください。','アバター動画を再生できませんでした。会話を再開してください。'],
+ ko:['아바타 동영상을 로딩 중입니다…','동영상을 버퍼링 중입니다. 준비되면 대화를 계속할 수 있습니다.','탭하여 아바타 동영상 재생','브라우저가 동영상을 일시 중지했습니다. 탭하여 재생하세요.','동영상을 재생하지 못했습니다. 대화를 다시 시작하세요.'],
+ th:['กำลังโหลดวิดีโออวตาร…','วิดีโอกำลังบัฟเฟอร์ สนทนาต่อได้เมื่อพร้อม','แตะเพื่อเล่นวิดีโออวตาร','เบราว์เซอร์หยุดวิดีโอชั่วคราว แตะเพื่อเล่น','เล่นวิดีโอไม่ได้ โปรดเริ่มแชตใหม่'],
+ ms:['Memuatkan video avatar…','Video sedang menimbal. Sembang disambung apabila sedia.','Ketik untuk memainkan video avatar','Pelayar menjeda video. Ketik untuk memainkannya.','Video avatar tidak dapat dimainkan. Mulakan semula sembang.'],
+ vi:['Đang tải video nhân vật…','Video đang tải bộ đệm. Hội thoại tiếp tục khi sẵn sàng.','Nhấn để phát video nhân vật','Trình duyệt đã tạm dừng video. Nhấn để phát.','Không thể phát video nhân vật. Hãy bắt đầu lại cuộc trò chuyện.'],
+ hi:['अवतार वीडियो लोड हो रहा है…','वीडियो बफ़र हो रहा है। तैयार होने पर बातचीत जारी होगी।','अवतार वीडियो चलाने के लिए टैप करें','ब्राउज़र ने वीडियो रोक दिया है। चलाने के लिए टैप करें।','अवतार वीडियो नहीं चल सका। कृपया चैट फिर से शुरू करें।'],
+ id:['Memuat video avatar…','Video sedang buffering. Obrolan dilanjutkan saat siap.','Ketuk untuk memutar video avatar','Browser menjeda video. Ketuk untuk memutarnya.','Video avatar tidak dapat diputar. Mulai ulang obrolan.'],
+};
+for(const [locale,row] of Object.entries(videoRows))videoKeys.forEach((key,index)=>demoCatalogs[locale][key]=row[index]);

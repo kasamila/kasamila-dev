@@ -1,13 +1,14 @@
-import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=1';
+import {DemoVideo} from './demo-video.js?v=1';
+import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=2';
 import { companionText } from './companion-copy.js';
 import { language, localizedPortalUrl } from './i18n.js?v=20';
-import { demoText } from './demo-copy.js?v=5';
+import { demoText } from './demo-copy.js?v=6';
 import { drivePcm } from './examples/audio-bridge/bridge.mjs';
 const $=selector=>document.querySelector(selector);
 const chatPage=location.pathname.endsWith('/chat');
 $('#gallery').hidden=chatPage;$('#chat-demo').hidden=!chatPage;
 let catalog={avatars:[],channels:[]},player=null,socket=null,source=null,context=null,micStream=null,micNode=null,micInput=null;
-let running=false,starting=false,ending=false,muted=false,ready=false,output=null,timeout=null,startup=null,pendingPlayer=null;
+let running=false,starting=false,ending=false,muted=false,ready=false,output=null,timeout=null,startup=null,pendingPlayer=null,media=null,mediaReady=false;
 let inputRate=16000,bootstrap=null,playedStart=0,receivedMs=0,version=0;
 function copy(){
  document.querySelectorAll('[data-companion-copy]').forEach(node=>node.textContent=companionText(node.dataset.companionCopy));
@@ -68,7 +69,7 @@ async function stopMic(){
  send({type:'audio_end'});$('#demo-mic').setAttribute('aria-pressed','false');$('#demo-mic').textContent=demoText('mic');
 }
 async function end(message=demoText('ended')){
- if(ending)return;ending=true;version++;ready=false;running=false;starting=false;clearTimeout(timeout);startup?.close();startup=null;controls();
+ if(ending)return;ending=true;version++;ready=false;running=false;starting=false;clearTimeout(timeout);startup?.close();startup=null;media?.close();media=null;mediaReady=false;controls();
  await stopMic();const oldSocket=socket;socket=null;oldSocket?.close();stopAudio();
  const oldPlayer=player||pendingPlayer;player=pendingPlayer=null;const oldBootstrap=bootstrap;bootstrap=null;
  const oldContext=context;context=null;
@@ -92,8 +93,13 @@ async function start(){
   if(attempt!==version)return;
   const element=document.createElement('kasamila-avatar');pendingPlayer=element;guard.bind(element,context);$('#demo-stage').replaceChildren(element);
   element.addEventListener('kasamila-error',()=>{if(attempt===version)void end(demoText('failed'));});
+  const presentation=media=new DemoVideo($('#demo-stage'),catalog.avatars.find(row=>row.id===$('#demo-avatar').value)?.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp',{
+   onState(available){if(attempt!==version||ending)return;mediaReady=available;if(running){if(!available)interrupt();ready=available;status(demoText(available?'connected':'videoBuffering'));controls();}},
+   onFailure(note){if(attempt===version)void end(note);}
+  });
   const created=await Kasamila.create({element,sessionToken:result.runtime.client_token,templateMedia:result.template_media,providerPreview:!result.template_media});
   if(attempt!==version){await disposeDemoAvatar(created,result);return;}player=created;pendingPlayer=null;
+  guard.video(presentation);await presentation.wait(created);if(attempt!==version)return;
   guard.connecting();const ticket=await voiceTicket('/portal/apps/voice-ticket',result,guard.signal);if(attempt!==version)return;
   socket=new WebSocket(location.protocol==='https:'?'wss://'+location.host+'/portal/apps/socket':'ws://'+location.host+'/portal/apps/socket');
   const ws=socket;ws.onopen=()=>{if(attempt===version&&socket===ws)send({ticket});};
@@ -101,7 +107,7 @@ async function start(){
    if(attempt!==version||socket!==ws)return;
    try{
     const message=JSON.parse(event.data);
-    if(message.type==='ready'){guard.complete();ready=true;running=true;starting=false;inputRate=message.input_rate;status(demoText('connected'));controls();timeout=setTimeout(()=>void end(),result.duration*1000);}
+    if(message.type==='ready'){guard.complete();ready=mediaReady;running=true;starting=false;inputRate=message.input_rate;status(demoText(mediaReady?'connected':'videoBuffering'));controls();timeout=setTimeout(()=>void end(),result.duration*1000);}
     else if(message.type==='error'){void end(demoText(message.code||'failed'));}
     else if(message.type==='interrupted'){stopAudio();}
     else if(message.type==='user_text'&&message.text){bubble('user',message.text);}
