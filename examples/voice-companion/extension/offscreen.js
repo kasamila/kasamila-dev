@@ -1,5 +1,6 @@
 let stream, context, input, tap, stopping = false, generation = 0;
 const port = chrome.runtime.connect({name:'capture'});
+const heartbeat=setInterval(()=>{try{port.postMessage({type:'tick'});}catch{clearInterval(heartbeat);void stop();}},10000);
 async function stop() {
   generation++; stopping = true;
   stream?.getTracks().forEach(track=>track.stop()); stream=null;
@@ -13,10 +14,11 @@ chrome.runtime.onMessage.addListener((message, sender, respond)=>{
   if(sender.id!==chrome.runtime.id||message.target!=='capture'||message.type!=='start')return;
   void (async()=>{
     await stop();const attempt=generation;
+    let stage='capture';
     try {
       const acquired=await navigator.mediaDevices.getUserMedia({audio:{mandatory:{chromeMediaSource:'tab',chromeMediaSourceId:message.streamId}},video:false});
       if(attempt!==generation){acquired.getTracks().forEach(track=>track.stop());respond({ok:false});return;}
-      stream=acquired;context=new AudioContext();await context.resume();
+      stage='audio-context';stream=acquired;context=new AudioContext();await context.resume();
       await context.audioWorklet.addModule('capture-worklet.js');
       if(attempt!==generation){respond({ok:false});return;}
       input=context.createMediaStreamSource(stream);tap=new AudioWorkletNode(context,'companion-capture');
@@ -25,7 +27,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond)=>{
       tap.port.onmessage=event=>{try{port.postMessage({type:'pcm',samples:Array.from(new Int16Array(event.data))});}catch{void stop();}};
       for(const track of stream.getTracks())track.onended=()=>{if(!stopping){void stop();port.postMessage({type:'stopped'});}};
       respond({ok:true});
-    }catch{await stop();respond({ok:false});}
+    }catch(error){await stop();respond({ok:false,reason:error.name==='NotAllowedError'?'permission':error.name==='NotReadableError'?'in-use':stage});}
   })();
   return true;
 });

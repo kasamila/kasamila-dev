@@ -1,13 +1,42 @@
 {
   "manifest_version": 3,
   "name": "Kasamila Voice Companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Animate a Kasamila avatar with audio from the tab you explicitly select.",
   "minimum_chrome_version": "116",
-  "permissions": ["activeTab", "tabCapture", "offscreen", "sidePanel"],
-  "background": {"service_worker": "worker.js", "type": "module"},
-  "action": {"default_title": "Kasamila · Connect this tab"},
-  "commands": {"_execute_action": {"suggested_key": {"default": "Alt+Shift+K"}, "description": "Connect the current tab"}},
-  "side_panel": {"default_path": "panel.html"},
-  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; frame-src https://kasamila.com; connect-src 'self'"}
+  "permissions": [
+    "activeTab",
+    "tabCapture",
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Kasamila \u8def Connect this tab",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+K"
+      },
+      "description": "Connect the current tab"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; frame-src https://kasamila.com; connect-src 'self'"
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
 }
