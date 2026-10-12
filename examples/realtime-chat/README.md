@@ -33,3 +33,8 @@ python -m uvicorn server:app --host 127.0.0.1 --port 8792
 官方协议链接见英文说明。官网管理员从 Admin 的“应用演示管理”入口设置公开数字人、名字、人设、护栏、各通道音色、模型、凭据与会话限额；只有 superadmin 能保存。
 
 Qwen 3.8 需要 `VOICE_ENDPOINT=wss://工作空间ID.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime`（北京），或新加坡 `ap-southeast-1` 域名；默认模型 `qwen3.8-omni-flash-realtime`，默认音色 `Tina`。密钥必须具有对应工作空间权限。
+
+
+## 移动端连接
+
+首次加载会分别显示数字人准备与语音连接状态。语音票据在数字人准备完毕后获取，整个启动过程有三分钟超时保护；取消后会清理迟到的初始化结果。如果浏览器暂停音频，请点击“点击启用声音”。Shopify 的两分钟无操作计时从连接成功后开始，加载时间不计入。此调整仅在应用层完成，不改变 Kasamila API、SDK 或口型模型。

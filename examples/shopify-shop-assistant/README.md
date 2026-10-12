@@ -85,3 +85,8 @@ The Portal reference sends a ten-second ping/pong heartbeat that does not reset 
 Microphone capture uses the same continuous 16 kHz mono PCM and Qwen transport defaults as the realtime chat demo, including echo cancellation and noise suppression. Do not reduce TCP send buffers or apply an amplitude gate that clips quiet speech. Browser writes are bounded at 64 KiB. The Shopify host applies the conservative WebRTC speech detector before the Qwen uplink, preserving 400 ms of onset pre-roll and 1.2 seconds of trailing audio. Sustained non-speech is replaced by silent PCM, preserving the continuous audio clock needed for prompt Qwen end-of-turn detection; speech remains full-quality 16 kHz PCM. Do not omit silence packets after applying VAD. Install the pinned webrtcvad-wheels dependency from requirements.txt. A separate three-second audio pump keeps browser heartbeats responsive during transient upstream stalls. A localized warning reports discarded stale audio; delayed pongs alone do not disconnect the session.
 
 The public embed URL hosts the assistant inside a same-origin child frame so the published player's parent-window accesses work inside Shopify. Both frames retain the merchant-specific CSP allowlist. Only validated expand/collapse messages pass through to the merchant page; no credentials are forwarded. Microphone and autoplay permissions are delegated through both frames.
+
+
+## 移动端连接
+
+首次加载会分别显示数字人准备与语音连接状态。语音票据在数字人准备完毕后获取，整个启动过程有三分钟超时保护；取消后会清理迟到的初始化结果。如果浏览器暂停音频，请点击“点击启用声音”。Shopify 的两分钟无操作计时从连接成功后开始，加载时间不计入。此调整仅在应用层完成，不改变 Kasamila API、SDK 或口型模型。

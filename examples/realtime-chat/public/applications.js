@@ -1,13 +1,16 @@
+import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=1';
+import { companionText } from './companion-copy.js';
 import { language, localizedPortalUrl } from './i18n.js?v=20';
-import { demoText } from './demo-copy.js?v=3';
+import { demoText } from './demo-copy.js?v=5';
 import { drivePcm } from './examples/audio-bridge/bridge.mjs';
 const $=selector=>document.querySelector(selector);
 const chatPage=location.pathname.endsWith('/chat');
 $('#gallery').hidden=chatPage;$('#chat-demo').hidden=!chatPage;
 let catalog={avatars:[],channels:[]},player=null,socket=null,source=null,context=null,micStream=null,micNode=null,micInput=null;
-let running=false,starting=false,ending=false,muted=false,ready=false,output=null,timeout=null,startupTimeout=null;
+let running=false,starting=false,ending=false,muted=false,ready=false,output=null,timeout=null,startup=null,pendingPlayer=null;
 let inputRate=16000,bootstrap=null,playedStart=0,receivedMs=0,version=0;
 function copy(){
+ document.querySelectorAll('[data-companion-copy]').forEach(node=>node.textContent=companionText(node.dataset.companionCopy));
  document.querySelectorAll('[data-demo-copy]').forEach(node=>node.textContent=demoText(node.dataset.demoCopy));
  $('#demo-text').placeholder=demoText('input');
  $('#demo-mic').textContent=demoText(micStream?'micOff':'mic');$('#demo-mute').textContent=demoText(muted?'unmute':'mute');
@@ -65,36 +68,40 @@ async function stopMic(){
  send({type:'audio_end'});$('#demo-mic').setAttribute('aria-pressed','false');$('#demo-mic').textContent=demoText('mic');
 }
 async function end(message=demoText('ended')){
- if(ending)return;ending=true;version++;ready=false;running=false;starting=false;clearTimeout(timeout);clearTimeout(startupTimeout);controls();
+ if(ending)return;ending=true;version++;ready=false;running=false;starting=false;clearTimeout(timeout);startup?.close();startup=null;controls();
  await stopMic();const oldSocket=socket;socket=null;oldSocket?.close();stopAudio();
- const oldPlayer=player;player=null;
- try{if(oldPlayer)await oldPlayer.destroy();else if(bootstrap)await fetch(new URL('/api/v1/runtime/sessions/end',bootstrap.api_base||location.origin),{method:'POST',keepalive:true,headers:{Authorization:'Bearer '+bootstrap.runtime.client_token}});}catch{}
- bootstrap=null;try{await context?.close();}catch{}context=null;
+ const oldPlayer=player||pendingPlayer;player=pendingPlayer=null;const oldBootstrap=bootstrap;bootstrap=null;
+ const oldContext=context;context=null;
+ await disposeDemoAvatar(oldPlayer,oldBootstrap);try{await oldContext?.close();}catch{}
+
  const image=document.createElement('img');image.id='demo-poster';image.src=catalog.avatars.find(row=>row.id===$('#demo-avatar').value)?.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp';image.alt='';$('#demo-stage').replaceChildren(image);
  ending=false;status(message);controls();
 }
 async function start(){
  if(starting||running||ending)return;starting=true;const attempt=++version;controls();status(demoText('connecting'));
  $('#demo-history').replaceChildren();muted=false;copy();
+ const guard=startup=new DemoStartup($('#demo-end'),status,note=>{if(attempt===version)void end(note);});
  try{
-  context=new AudioContext();await context.resume();
+  context=new AudioContext();guard.bind(null,context);await context.resume();if(attempt!==version)return;
+  // Consume late admission responses so cancellation can release an allocated runtime.
   const response=await fetch('/portal/apps/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({avatar:$('#demo-avatar').value,channel:$('#demo-channel').value,locale:language(),consent:$('#demo-consent').checked})});
   const result=await response.json();if(!response.ok)throw new Error('Session unavailable');
-  if(attempt!==version){await fetch(new URL('/api/v1/runtime/sessions/end',result.api_base||location.origin),{method:'POST',headers:{Authorization:'Bearer '+result.runtime.client_token}});return;}
+  if(attempt!==version){await releaseDemoRuntime(result);return;}
   bootstrap=result;
   const apiBase=result.api_base||location.origin;const {loadKasamila}=await import(new URL('/sdk/bootstrap/1/loader.mjs',apiBase).href);const Kasamila=await loadKasamila(result.runtime.sdk,apiBase);
   if(attempt!==version)return;
-  const element=document.createElement('kasamila-avatar');$('#demo-stage').replaceChildren(element);
-  element.addEventListener('kasamila-error',()=>void end(demoText('failed')));
+  const element=document.createElement('kasamila-avatar');pendingPlayer=element;guard.bind(element,context);$('#demo-stage').replaceChildren(element);
+  element.addEventListener('kasamila-error',()=>{if(attempt===version)void end(demoText('failed'));});
   const created=await Kasamila.create({element,sessionToken:result.runtime.client_token,templateMedia:result.template_media,providerPreview:!result.template_media});
-  if(attempt!==version){await created.destroy();return;}player=created;
+  if(attempt!==version){await disposeDemoAvatar(created,result);return;}player=created;pendingPlayer=null;
+  guard.connecting();const ticket=await voiceTicket('/portal/apps/voice-ticket',result,guard.signal);if(attempt!==version)return;
   socket=new WebSocket(location.protocol==='https:'?'wss://'+location.host+'/portal/apps/socket':'ws://'+location.host+'/portal/apps/socket');
-  socket.onopen=()=>send({ticket:result.ticket});
-  startupTimeout=setTimeout(()=>void end(demoText('failed')),25000);
+  const ws=socket;ws.onopen=()=>{if(attempt===version&&socket===ws)send({ticket});};
   socket.onmessage=event=>{
+   if(attempt!==version||socket!==ws)return;
    try{
     const message=JSON.parse(event.data);
-    if(message.type==='ready'){clearTimeout(startupTimeout);ready=true;running=true;starting=false;inputRate=message.input_rate;status(demoText('connected'));controls();timeout=setTimeout(()=>void end(),result.duration*1000);}
+    if(message.type==='ready'){guard.complete();ready=true;running=true;starting=false;inputRate=message.input_rate;status(demoText('connected'));controls();timeout=setTimeout(()=>void end(),result.duration*1000);}
     else if(message.type==='error'){void end(demoText(message.code||'failed'));}
     else if(message.type==='interrupted'){stopAudio();}
     else if(message.type==='user_text'&&message.text){bubble('user',message.text);}
@@ -106,7 +113,7 @@ async function start(){
     }else if(message.type==='done'){source?.close();source=null;output=null;}
    }catch{void end(demoText('failed'));}
   };
-  socket.onclose=()=>{if(!ending&&(starting||running))void end();};socket.onerror=()=>void end(demoText('failed'));
+  socket.onclose=()=>{if(attempt===version&&!ending&&(starting||running))void end(demoText(starting?'failed':'ended'));};socket.onerror=()=>{if(attempt===version)void end(demoText('failed'));};
  }catch{if(attempt===version)await end(demoText('failed'));}
 }
 $('#demo-avatar').addEventListener('change',renderChannels);$('#demo-consent').addEventListener('change',controls);

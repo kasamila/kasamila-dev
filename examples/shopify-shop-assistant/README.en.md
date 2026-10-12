@@ -41,3 +41,8 @@ The widget starts as a corner avatar and connects only after activation. One pro
 Background catalogue refresh, a single batch query for up to three candidates, and a 20-second verified-fact cache remove repeated product reads. Cache entries are isolated by merchant, country, language and webhook/credential version, with current selection checks. Compact model results reduce unnecessary tool round trips. Detail and cart requests always revalidate live facts.
 
 Eligible catalogue snapshots are read before waiting for the refresh lock. Voice tools have an eight-second deadline and return unknown facts on timeout. The provider reader remains active during tool execution, so speech can interrupt slow lookups. Recoverable turn errors keep the conversation open, and new inputs reset tool-call limits. Explicit approved catalogue names in streamed narration also move the product spotlight using existing records and their original verification timestamps. Captions occupy a separate layout region below the avatar. The existing ten-minute demo limit now displays an explicit message.
+
+
+## Mobile startup
+
+Avatar preparation and voice connection have separate status messages. Voice admission is requested after the avatar is ready, with a three-minute deadline covering the entire startup. Cancellation cleans up late initialization results. If the browser suspends audio, tap the audio activation button. Shopify starts its two-minute inactivity timer only after connecting. These are application-layer changes; the Kasamila API, SDK and mouth models are unchanged.

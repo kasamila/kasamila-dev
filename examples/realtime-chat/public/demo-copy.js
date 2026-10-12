@@ -1,4 +1,5 @@
 import { language } from './i18n.js?v=20';
+import { shopText } from './shopify-copy.js?v=1';
 const keys = ['heading','intro','available','chat','chatIntro','try','coming','liveIntro','commerce','commerceIntro','back','avatar','provider','consent','privacy','start','end','mic','interrupt','mute','input','send','note','unavailable','connecting','connected','failed','ended','micOff','unmute'];
 const rows = {
 zh:['应用展示','无需登录，在真实应用场景中体验 Kasamila。','可体验','实时数字人聊天','选择数字人和语音系统，用文字或声音开始对话，随时打断。','立即体验 →','即将推出','观看数字人在直播间闲聊并回答观众问题。','直播卖货','体验产品介绍、互动问答与购物讲解。','← 所有应用','数字人','语音通道','我同意将本次文字与语音通过演示服务器传输给所选 AI 平台进行处理；演示不保存对话，请勿提供敏感信息。','隐私政策','开始聊天','结束聊天','开启麦克风','打断','关闭声音','输入消息','发送','AI 回复仅作应用展示。会话到时自动结束；语音识别、语言和音色能力取决于所选平台。','暂无可用演示，请稍后再试。','正在连接…','已连接','连接失败，请重试或选择其他通道。','会话已结束','关闭麦克风','开启声音'],
@@ -56,4 +57,24 @@ const errorRows={
 };
 for(const [locale,row] of Object.entries(errorRows))errorKeys.forEach((key,index)=>demoCatalogs[locale][key]=row[index]);
 for(const row of Object.values(demoCatalogs)){row.demo_connection_failed=row.failed;row.provider_error=row.failed;}
-export function demoText(key){return demoCatalogs[language()]?.[key] || demoCatalogs.en[key] || key;}
+export function demoText(key){if(key==='commerce')return shopText('title');if(key==='commerceIntro')return shopText('intro');return demoCatalogs[language()]?.[key] || demoCatalogs.en[key] || key;}
+
+const startupKeys=['preparing','connectingVoice','enableAudio','audioBlocked','startupTimeout'];
+const startupRows={
+ zh:['正在准备数字人，首次加载可能需要一些时间…','正在连接语音通道…','点击启用声音','浏览器暂停了音频，请点击启用声音。','准备超时，请重试。已下载的资源通常可以复用。'],
+ en:['Preparing your avatar. The first load may take a little time…','Connecting to the voice channel…','Tap to enable audio','Audio is paused by your browser. Tap to enable it.','Preparation timed out. Please retry; downloaded resources can usually be reused.'],
+ fr:['Préparation de l’avatar. Le premier chargement peut prendre du temps…','Connexion au canal vocal…','Activer le son','Le navigateur a suspendu le son. Appuyez pour l’activer.','La préparation a expiré. Réessayez ; les ressources téléchargées peuvent généralement être réutilisées.'],
+ de:['Avatar wird vorbereitet. Das erste Laden kann etwas dauern…','Sprachkanal wird verbunden…','Audio aktivieren','Der Browser hat Audio pausiert. Zum Aktivieren tippen.','Vorbereitung abgelaufen. Erneut versuchen; geladene Ressourcen können meist wiederverwendet werden.'],
+ ru:['Подготовка аватара. Первая загрузка может занять время…','Подключение голосового канала…','Включить звук','Браузер приостановил звук. Нажмите, чтобы включить.','Время подготовки истекло. Повторите попытку; загруженные ресурсы обычно используются повторно.'],
+ es:['Preparando el avatar. La primera carga puede tardar…','Conectando el canal de voz…','Activar audio','El navegador ha pausado el audio. Pulsa para activarlo.','Se agotó el tiempo de preparación. Reintenta; normalmente se reutilizan los recursos descargados.'],
+ it:['Preparazione dell’avatar. Il primo caricamento può richiedere tempo…','Connessione al canale vocale…','Attiva audio','Il browser ha sospeso l’audio. Tocca per attivarlo.','Preparazione scaduta. Riprova; le risorse scaricate sono generalmente riutilizzabili.'],
+ ar:['جارٍ تجهيز الشخصية. قد يستغرق التحميل الأول بعض الوقت…','جارٍ الاتصال بالقناة الصوتية…','اضغط لتفعيل الصوت','أوقف المتصفح الصوت مؤقتًا. اضغط لتفعيله.','انتهت مهلة التجهيز. أعد المحاولة؛ يمكن عادةً إعادة استخدام الموارد المحمّلة.'],
+ ja:['アバターを準備中です。初回の読み込みには時間がかかる場合があります…','音声チャンネルに接続中…','タップして音声を有効にする','ブラウザーが音声を一時停止しました。タップして有効にしてください。','準備がタイムアウトしました。再試行してください。通常、読み込み済みのデータは再利用されます。'],
+ ko:['아바타를 준비 중입니다. 첫 로딩에는 시간이 걸릴 수 있습니다…','음성 채널에 연결 중…','탭하여 오디오 활성화','브라우저가 오디오를 일시 중지했습니다. 탭하여 활성화하세요.','준비 시간이 초과되었습니다. 다시 시도하세요. 다운로드한 리소스는 대개 재사용됩니다.'],
+ th:['กำลังเตรียมอวตาร การโหลดครั้งแรกอาจใช้เวลาสักครู่…','กำลังเชื่อมต่อช่องเสียง…','แตะเพื่อเปิดเสียง','เบราว์เซอร์หยุดเสียงชั่วคราว แตะเพื่อเปิดเสียง','หมดเวลาเตรียม โปรดลองใหม่ โดยปกติจะใช้ทรัพยากรที่ดาวน์โหลดไว้ซ้ำได้'],
+ ms:['Menyediakan avatar. Muatan pertama mungkin mengambil masa…','Menyambung saluran suara…','Ketik untuk mengaktifkan audio','Pelayar menjeda audio. Ketik untuk mengaktifkannya.','Masa persediaan tamat. Cuba lagi; sumber yang dimuat turun biasanya boleh digunakan semula.'],
+ vi:['Đang chuẩn bị nhân vật. Lần tải đầu có thể mất một chút thời gian…','Đang kết nối kênh giọng nói…','Nhấn để bật âm thanh','Trình duyệt đã tạm dừng âm thanh. Nhấn để bật.','Chuẩn bị quá thời gian. Hãy thử lại; tài nguyên đã tải thường có thể dùng lại.'],
+ hi:['अवतार तैयार हो रहा है। पहली बार लोड होने में कुछ समय लग सकता है…','वॉइस चैनल से जुड़ रहा है…','ऑडियो चालू करने के लिए टैप करें','ब्राउज़र ने ऑडियो रोक दिया है। चालू करने के लिए टैप करें।','तैयारी का समय समाप्त। फिर कोशिश करें; डाउनलोड किए संसाधन आम तौर पर दोबारा उपयोग हो सकते हैं।'],
+ id:['Menyiapkan avatar. Pemuatan pertama mungkin memerlukan waktu…','Menghubungkan saluran suara…','Ketuk untuk mengaktifkan audio','Browser menjeda audio. Ketuk untuk mengaktifkannya.','Waktu persiapan habis. Coba lagi; sumber daya yang diunduh biasanya dapat digunakan kembali.'],
+};
+for(const [locale,row] of Object.entries(startupRows))startupKeys.forEach((key,index)=>demoCatalogs[locale][key]=row[index]);

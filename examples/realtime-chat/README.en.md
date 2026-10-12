@@ -37,3 +37,8 @@ This loopback starter does not include public-hosting abuse controls or a creden
 - [Doubao realtime protocol](https://docs.volcengine.com/docs/DoubaoVoice/endtoend-realtime-voice-full-duplex-version?lang=zh)
 
 Qwen 3.8 requires `VOICE_ENDPOINT=wss://WORKSPACE_ID.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime` (Beijing), or the Singapore `ap-southeast-1` domain. The default model is `qwen3.8-omni-flash-realtime` and voice is `Tina`. The API key must have access to that workspace.
+
+
+## Mobile startup
+
+Avatar preparation and voice connection have separate status messages. Voice admission is requested after the avatar is ready, with a three-minute deadline covering the entire startup. Cancellation cleans up late initialization results. If the browser suspends audio, tap the audio activation button. Shopify starts its two-minute inactivity timer only after connecting. These are application-layer changes; the Kasamila API, SDK and mouth models are unchanged.

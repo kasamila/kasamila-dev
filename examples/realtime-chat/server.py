@@ -25,6 +25,7 @@ DEFAULTS = {
     "doubao": ("wss://openspeech.bytedance.com/api/v3/duplex/realtime/dialogue", "1.2.6.1", "zh_female_vv_uranus_bigtts", 16000),
 }
 tickets = {}
+preparations = {}
 app = FastAPI()
 app.mount("/web/portal", StaticFiles(directory=PUBLIC), name="public")
 
@@ -79,11 +80,33 @@ async def session(request: Request):
                            "update_policy": "pinned", "required_capabilities": ["geometry-v7", "hls", "protected-runtime-v1", "license-grant-v1"]}})
             response.raise_for_status()
             runtime = response.json()["data"]
+        for key, value in list(preparations.items()):
+            if value["deadline"] < time.time():
+                preparations.pop(key, None)
+                tickets.pop(value["ticket"], None)
         ticket = secrets.token_urlsafe(32)
         tickets[ticket] = {"token": runtime["client_token"], "expires": time.time() + 120, "locale": body.get("locale", "en")}
-        return JSONResponse({"runtime": runtime, "ticket": ticket, "duration": 180, "api_base": API, "template_media": descriptor}, headers={"Cache-Control": "no-store"})
+        preparation = secrets.token_urlsafe(32)
+        preparations[preparation] = {"ticket": ticket, "deadline": time.time() + 240, "ip": request.client.host}
+        return JSONResponse({"runtime": runtime, "ticket": ticket, "preparation": preparation, "duration": 180, "api_base": API, "template_media": descriptor}, headers={"Cache-Control": "no-store"})
     except Exception:
         return JSONResponse({"error": "Check local configuration and provider access"}, status_code=503)
+
+@app.post("/portal/apps/voice-ticket")
+async def voice_ticket(request: Request):
+    if request.headers.get("origin") != ORIGIN:
+        return JSONResponse({"error": "Origin denied"}, status_code=403)
+    body = await request.json()
+    value = preparations.get(str(body.get("preparation", "")))
+    if not value or value["deadline"] <= time.time() or value["ip"] != request.client.host:
+        return JSONResponse({"error": "Restart the demo"}, status_code=403)
+    state = tickets.get(value["ticket"])
+    if not state:
+        return JSONResponse({"error": "Ticket consumed"}, status_code=403)
+    preparations.pop(body["preparation"], None)
+    state["expires"] = min(time.time() + 60, value["deadline"])
+    return JSONResponse({"ticket": value["ticket"]}, headers={"Cache-Control": "no-store"})
+
 
 @app.websocket("/portal/apps/socket")
 async def socket(browser: WebSocket):

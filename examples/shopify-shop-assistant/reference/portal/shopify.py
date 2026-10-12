@@ -33,6 +33,7 @@ from .shop_client import remote, verify_oauth, verify_webhook, verified_shop_ali
 from .shop_catalog import PREFIX, snapshot, tools, visible, product_detail, client_for, warm_catalogs, refresh_tasks
 from .shop_voice import ShopVoice, ShopAudioPump, ShopSpeechGate, instructions
 from .schemas import PortalLocale
+from .demo_startup import VoiceAdmission, prepare_voice, activate_voice
 
 router = APIRouter(include_in_schema=False)
 logger = logging.getLogger("uvicorn.error.portal.shopify")
@@ -373,8 +374,14 @@ def start(request: Request, payload: BuyerRequest, db: DatabaseSession):
     if not limiter.check("start:" + request.client.host, 6, 600).allowed:
         raise ApiError(429, "shop_limited", "Try again later")
     runtime = create_obs_runtime(request, store, db)
-    ticket = seal_json({"nonce": secrets.token_urlsafe(24), "expires": time.time() + 120, "store": store["id"], "shop": store["shop"], "country": payload.country, "locale": payload.locale, "origin": source, "ip": request.client.host, "runtime_session": runtime["runtime"]["session_id"]}, "portal-shopify-chat")
-    return response({**runtime, "ticket": ticket})
+    ticket_data = {"nonce": secrets.token_urlsafe(24), "expires": time.time() + 120, "store": store["id"], "shop": store["shop"], "country": payload.country, "locale": payload.locale, "origin": source, "ip": request.client.host, "runtime_session": runtime["runtime"]["session_id"]}
+    ticket = seal_json(ticket_data, "portal-shopify-chat")
+    return response({**runtime, "ticket": ticket, "preparation": prepare_voice(ticket_data, "portal-shopify-chat")})
+
+
+@router.post("/portal/apps/shopify/voice-ticket")
+def voice_admission(request: Request, payload: VoiceAdmission, db: DatabaseSession):
+    return response(activate_voice(request, payload, db, "portal-shopify-chat", origin(request)))
 
 
 async def wait_for_inactivity(last_input, send, *, clock=time.monotonic, sleep=asyncio.sleep):
