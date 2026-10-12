@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Kasamila Voice Companion",
+  "version": "0.1.0",
+  "description": "Animate a Kasamila avatar with audio from the tab you explicitly select.",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "tabCapture", "offscreen", "sidePanel"],
+  "background": {"service_worker": "worker.js", "type": "module"},
+  "action": {"default_title": "Kasamila · Connect this tab"},
+  "commands": {"_execute_action": {"suggested_key": {"default": "Alt+Shift+K"}, "description": "Connect the current tab"}},
+  "side_panel": {"default_path": "panel.html"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; frame-src https://kasamila.com; connect-src 'self'"}
+}
