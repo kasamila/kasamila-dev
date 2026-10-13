@@ -105,6 +105,7 @@ class ChatPlatform:
         self.send_lock = asyncio.Lock()
         self.page_token = None
         self.youtube_since = None
+        self.continuity = None
 
     async def headers(self):
         async with self.lock:
@@ -129,7 +130,19 @@ class ChatPlatform:
     async def resolve(self, owner=False):
         headers = await self.headers()
         if self.room["platform"] == "youtube":
-            value = await request("GET", YOUTUBE + "videos", headers=headers, params={"id": self.room["destination"], "part": "snippet,liveStreamingDetails"})
+            if owner and self.continuity and self.room.get("youtube_follow", True):
+                try:
+                    chat_id = await self.continuity.resolve()
+                except PlatformError:
+                    self.live_chat_id = None
+                    self.page_token, self.youtube_since = None, None
+                    raise
+                if chat_id != self.live_chat_id:
+                    self.page_token, self.youtube_since = None, None
+                self.live_chat_id = chat_id
+                return
+            from .youtube_continuity import destination
+            value = await request("GET", YOUTUBE + "videos", headers=headers, params={"id": destination(self.room), "part": "snippet,liveStreamingDetails"})
             rows = value.get("items", [])
             if not rows or owner and rows[0]["snippet"]["channelId"] != self.token["user_id"]:
                 raise PlatformError("live_owner_mismatch")
@@ -145,8 +158,10 @@ class ChatPlatform:
                 raise PlatformError("live_owner_mismatch")
             self.broadcaster_id = rows[0]["id"]
 
-    async def send(self, text, reply_id=None):
+    async def send(self, text, reply_id=None, chat_id=None):
         async with self.send_lock:
+            if chat_id and chat_id != self.live_chat_id:
+                raise PlatformError("live_room_offline")
             return await self._send(text, reply_id)
 
     async def _send(self, text, reply_id=None):
@@ -219,11 +234,16 @@ class ChatPlatform:
             self.youtube_since = time.time()
         delay, refreshed = 2, False
         while True:
+            if self.continuity and self.room.get("youtube_follow", True):
+                await self.resolve(owner=True)
+                if self.youtube_since is None: self.youtube_since = time.time()
             headers = await self.headers()
             # Reconnect with the cursor before the OAuth token expires. There is
             # no periodic list request while the stream is idle.
             lifetime = max(1, min(3000, self.token["expires_at"] - time.time() - 60))
-            pages = stream_pages(headers, self.live_chat_id, self.page_token, lifetime)
+            if self.continuity and self.room.get("youtube_follow", True): lifetime = min(lifetime, 60)
+            chat_id = self.live_chat_id
+            pages = stream_pages(headers, chat_id, self.page_token, lifetime)
             try:
                 async for page in pages:
                     delay, refreshed = 2, False
@@ -234,7 +254,7 @@ class ChatPlatform:
                                 continue
                         except (ValueError, KeyError):
                             continue
-                        yield {key: item[key] for key in ("id", "user_id", "name", "text")}
+                        yield {**{key: item[key] for key in ("id", "user_id", "name", "text")}, "chat_id": chat_id}
                     # Advance only after the entire batch has been handed off.
                     # A mid-batch retry may redeliver IDs; ChatPolicy deduplicates.
                     self.page_token = page["nextPageToken"] or self.page_token

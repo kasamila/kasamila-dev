@@ -1,5 +1,7 @@
 .env
 platform-token.json
+youtube-state.json
+youtube-state.tmp
 template-media.json
 __pycache__/
 .venv/

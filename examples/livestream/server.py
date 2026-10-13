@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from host.engine import LiveHub
 from host.platforms import ChatPlatform
+from host.youtube_continuity import YouTubeContinuity
 from host.runtime import sessions, finish_runtime
 
 load_dotenv()
@@ -22,9 +23,11 @@ ROOT = Path(__file__).parent
 ORIGIN = os.getenv("DEMO_ORIGIN", "http://127.0.0.1:8877")
 API = os.getenv("KASAMILA_API_BASE", "https://api.kasamila.com").rstrip("/")
 TOKEN_FILE = Path(os.getenv("PLATFORM_TOKEN_FILE", "platform-token.json"))
+CONTINUITY_FILE = Path(os.getenv("YOUTUBE_STATE_FILE", "youtube-state.json"))
 hub = None
 gate = asyncio.Lock()
 room = {"id": "demo", "platform": os.getenv("LIVE_PLATFORM", "twitch"), "destination": os.getenv("LIVE_DESTINATION", ""),
+        "youtube_follow":os.getenv("YOUTUBE_FOLLOW", "true")=="true", "youtube_auto_continue":os.getenv("YOUTUBE_AUTO_CONTINUE", "false")=="true",
         "voice": os.getenv("QWEN_VOICE", "Tina"), "persona": os.getenv("LIVE_PERSONA", "You are a friendly livestream host."),
         "guardrails": os.getenv("LIVE_GUARDRAILS", "Do not request private information or promise real transactions."),
         "low_traffic_per_minute": 12, "voice_interval_seconds": 12, "memory_minutes": 30, "filter_links": True, "blocked_terms": []}
@@ -90,6 +93,18 @@ async def control(action: str, request: Request):
                 TOKEN_FILE.write_text(json.dumps(value), encoding="utf-8")
                 TOKEN_FILE.chmod(0o600)
             platform = ChatPlatform(room, {"client_id": os.environ["OAUTH_CLIENT_ID"], "client_secret": os.environ["OAUTH_CLIENT_SECRET"]}, token, persist)
+            if room["platform"] == "youtube":
+                scope = {"destination":room["destination"], "owner":token["user_id"]}
+                room.pop("youtube_state", None)
+                if CONTINUITY_FILE.exists():
+                    stored = json.loads(CONTINUITY_FILE.read_text(encoding="utf-8"))
+                    if stored.get("scope") != scope:
+                        return failure("live_youtube_review", 409)
+                    room["youtube_state"] = stored["state"]
+                async def persist_state(state):
+                    temp = CONTINUITY_FILE.with_suffix(".tmp")
+                    temp.write_text(json.dumps({"scope":scope,"state":state}),encoding="utf-8");temp.chmod(0o600);temp.replace(CONTINUITY_FILE)
+                platform.continuity = YouTubeContinuity(platform,persist_state)
             runtime = await new_runtime()
             hub = LiveHub(room, platform, channel, avatar)
             hub.controller, hub.heartbeat = body["controller"], time.monotonic()

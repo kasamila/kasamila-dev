@@ -46,3 +46,11 @@ YouTube keeps one TLS connection to `youtube.googleapis.com:443` while idle, res
 Hosted Portal credentials are configured through **Admin → Application demos → Livestream demos**. Environment variables are only for this standalone sample. The hosted version adds Admin authentication, CSRF, encrypted token storage, same-origin checks, single-source OBS ownership and source revocation.
 
 Official protocols: [YouTube streamList](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/streamList), [gRPC contract](https://developers.google.com/youtube/v3/live/streaming-live-chat), [YouTube insert](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/insert), [Twitch chat](https://dev.twitch.tv/docs/chat/send-receive-messages/), [EventSub WebSockets](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/), [Qwen client events](https://help.aliyun.com/en/model-studio/client-events).
+
+## YouTube continuation
+
+`YOUTUBE_FOLLOW=true` follows broadcasts on the same reusable ingest stream. Opt in with `YOUTUBE_AUTO_CONTINUE=true` (default false) to create a successor only while the OBS browser source is connected, the old broadcast is complete and ingest is active. The successor preserves title/privacy, enables auto-start, disables auto-stop and binds the same stream key. Enable OBS automatic reconnect. Video changes do not require OAuth again; revoked/expired refresh credentials still do.
+
+Persist `YOUTUBE_STATE_FILE` (default youtube-state.json) and exclude it from version control. Creation intent is recorded before insertion. Ambiguous results are reconciled without duplicate insertion; inspect YouTube Studio for unresolved outcomes. Run one process only. This cannot restart OBS, repair networking, bypass platform restrictions, reset keys or revive completed broadcasts. Keep state/token files and stream keys private.
+
+Run only one auto-continuation instance per ingest stream. Use a separate state file when changing the channel or initial video so prior creation records are not lost. If YouTube forces the new broadcast to private, continuation pauses for review instead of silently starting with different visibility.

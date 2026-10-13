@@ -224,14 +224,18 @@ class LiveHub:
                 raise
             except Exception as error:
                 await self.set_status(error.code if isinstance(error, PlatformError) else "live_platform_error")
-                if isinstance(error, PlatformError) and error.code in ("live_auth_required", "live_owner_mismatch", "live_room_offline"):
+                if isinstance(error, PlatformError) and error.code in ("live_auth_required", "live_owner_mismatch"):
                     return
-                await asyncio.sleep(max(delay, getattr(error, "retry_after", 0)))
+                wait = 60 if getattr(error, "code", "") == "live_room_offline" else delay
+                await asyncio.sleep(max(wait, getattr(error, "retry_after", 0)))
                 delay = min(30, delay * 2)
 
     async def process(self):
         while not self.closed:
             item = await self.pending.get()
+            if item.get("chat_id") and item["chat_id"] != self.platform.live_chat_id:
+                self.pending.task_done()
+                continue
             speak = self.policy.choose_voice(item, self.audio_pending.qsize())
             try:
                 for attempt in range(3):
@@ -249,7 +253,7 @@ class LiveHub:
                 delivered = False
                 while not self.closed and not delivered:
                     try:
-                        await self.platform.send(reply, item["id"] if self.room["platform"] == "twitch" else None)
+                        await self.platform.send(reply, item["id"] if self.room["platform"] == "twitch" else None, **({"chat_id":item["chat_id"]} if item.get("chat_id") else {}))
                         delivered = True
                     except PlatformError as error:
                         await self.set_status(error.code)
@@ -271,6 +275,7 @@ class LiveHub:
         while not self.closed:
             item, text, audio = await self.audio_pending.get()
             try:
+                if item.get("chat_id") and item["chat_id"] != self.platform.live_chat_id: continue
                 self.voice_id = uuid.uuid4().hex
                 self.voice_done.clear()
                 await self.emit({"type": "speech", "id": self.voice_id, "name": item["name"], "text": text, "audio": audio})
