@@ -56,6 +56,23 @@ class YouTubeContinuity:
         self.owned(row)
         if self.state.get('video') != row['id']:
             await self.store(video=row['id'], phase='watching', pending=None, marker=None)
+        # Auto-start can wait for a *new* ingest edge even though OBS is already
+        # sending. Start only our own successor, never a manually scheduled show.
+        if (self.room.get('youtube_auto_continue') and self.state.get('created_video') == row['id']
+                and row.get('status',{}).get('lifeCycleStatus') in ('ready','testing')
+                and time.time()-self.state.get('last_created',0) >= 60
+                and time.time()-self.state.get('last_start_attempt',0) >= 60):
+            stream = self.state.get('stream')
+            if (row.get('contentDetails',{}).get('boundStreamId') != stream
+                    or row.get('status',{}).get('privacyStatus') != self.state.get('privacy')
+                    or row.get('status',{}).get('madeForKids')):
+                raise PlatformError('live_youtube_review',300)
+            streams = (await self.api('GET','liveStreams',params={'part':'snippet,status','id':stream})).get('items',[])
+            if not streams or self.owned(streams[0]).get('status',{}).get('streamStatus') != 'active':
+                raise PlatformError('live_youtube_waiting_ingest',60)
+            await self.store(last_start_attempt=time.time())
+            row = self.owned(await self.api('POST','liveBroadcasts/transition',params={
+                'id':row['id'],'broadcastStatus':'live','part':'snippet,status,contentDetails'}))
         if row.get('status', {}).get('lifeCycleStatus') != 'live':
             raise PlatformError('live_room_offline', 60)
         chat = row.get('snippet', {}).get('liveChatId')
@@ -94,7 +111,7 @@ class YouTubeContinuity:
                 token = value.get('nextPageToken')
                 if not token: break
             if len(found) != 1 or token: raise PlatformError('live_youtube_review',300)
-            await self.store(pending=found[0]['id'],phase='binding')
+            await self.store(pending=found[0]['id'],created_video=found[0]['id'],phase='binding')
             return await self.bind_pending(found[0],stream)
         streams = (await self.api('GET','liveStreams',params={'part':'snippet,status,contentDetails','id':stream})).get('items',[])
         if not streams: raise PlatformError('live_youtube_stream_required',300)
@@ -119,7 +136,7 @@ class YouTubeContinuity:
         body['contentDetails'].update(enableAutoStart=True,enableAutoStop=False,monitorStream={'enableMonitorStream':False})
         await self.store(phase='creating',marker=marker,last_created=time.time(),privacy=status['privacyStatus'])
         created=await self.api('POST','liveBroadcasts',params={'part':'snippet,status,contentDetails'},json=body)
-        await self.store(pending=created['id'],phase='binding')
+        await self.store(pending=created['id'],created_video=created['id'],phase='binding')
         return await self.bind_pending(created,stream)
 
     async def bind_pending(self, row, stream):
