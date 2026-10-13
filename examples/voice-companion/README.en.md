@@ -1,4 +1,4 @@
-# Kasamila Voice Companion 0.4.0 — extension preview
+# Kasamila Voice Companion 0.4.1 — extension preview
 
 Desktop Chrome / Edge 116+, Manifest V3. Click the extension on a selected HTTPS page (or localhost) to animate an avatar with that tab’s audio. Works with capturable web audio, including AI replies, web speech, music and alerts. Protected media, internal browser pages and mobile browsers are unsupported.
 
@@ -11,7 +11,7 @@ Desktop Chrome / Edge 116+, Manifest V3. Click the extension on a selected HTTPS
 5. There is no controller window, bitmap mirror, window handoff or return connection. Silence, reply completion and same-document routing keep the session alive. Closing PiP or the source tab, and full reload/navigation destroying the source document, stop it. Click the toolbar to reconnect using saved settings. Admin duration, concurrency and rate limits still apply.
 6. Continue speaking through the original website. Source audio plays once; avatar playback is disabled to prevent echo. The companion follows speech and does not generate replies.
 
-**Upgrade to 0.4.0:** close previous companion windows, replace unpacked files, reload the extension and accept any browser prompt for added permissions. Click the toolbar icon on the source page. Refreshing the website alone does not upgrade the extension.
+**Upgrade to 0.4.1:** close previous companion windows, replace unpacked files, reload the extension and accept any browser prompt for added permissions. Click the toolbar icon on the source page. Refreshing the website alone does not upgrade the extension.
 
 ## Permissions and data
 
@@ -37,3 +37,5 @@ Only mini-mode embed responses add the validated source-page Origin to their CSP
 Isolated browser tests use real toolbar permissions and WebRTC audio, covering initial consent, stored automatic connection, 36 seconds of silence, lost acknowledgements, minimized source windows, settings and Stop. Background throttling stays enabled. Separate hosted-Runtime tests measure actual mouth motion, audio-clock progress and rendered frames. These checks do not establish compatibility with every website or network.
 
 This is an unpacked preview, not a reviewed Chrome Web Store / Edge Add-ons listing. Lip motion has capture and inference latency.
+
+0.4.1: saved-avatar startup now detects browser-suspended audio initialization. Autoplay remains automatic when permitted; otherwise click Continue connection in the mini window, without reopening settings or changing avatars. Startup timeout permits retry and cancellation cleans up partial Runtime initialization. Only avatar choice and consent persist across browser restarts; each launch obtains a new session.
