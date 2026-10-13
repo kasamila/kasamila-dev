@@ -55,7 +55,7 @@ http://127.0.0.1:8877/portal/apps/live/obs#room=demo&token=<SOURCE_TOKEN>
 
 ## YouTube 自动续播
 
-`YOUTUBE_FOLLOW=true` 跟随同一可复用推流通道的新视频；`YOUTUBE_AUTO_CONTINUE=true` 明确开启自动新建，默认关闭。只有 OBS 浏览器源在线、旧直播已结束且 YouTube liveStream 状态为 active 时才创建；沿用上一场标题和可见性，新场次自动开始、关闭自动停止，绑定原有推流码。OBS 请启用自动重连。视频 ID 改变不需要重新 OAuth 授权。频道授权撤销或 Google 测试应用刷新凭据过期仍需重新授权。
+`YOUTUBE_FOLLOW=true` 跟随同一可复用推流通道的新视频；`YOUTUBE_AUTO_CONTINUE=true` 明确开启自动新建，默认关闭。只有 OBS 浏览器源在线、旧直播已结束且 YouTube liveStream 状态为 active 时才创建；沿用上一场标题和可见性，绑定原有推流码。新场次关闭 YouTube 的自动开始/停止；样例在就绪且推流有效后通过 transition 自动开始，兼容 OBS 一直推流的情况。OBS 请启用自动重连。视频 ID 改变不需要重新 OAuth 授权。频道授权撤销或 Google 测试应用刷新凭据过期仍需重新授权。
 
 `YOUTUBE_STATE_FILE`（默认 youtube-state.json）保存创建意图和当前视频，请保留并从版本控制排除。创建结果不确定时只核对、不会再次创建；去 YouTube Studio 核对后才能人工处理。只支持单进程实例。不会重启 OBS、修复网络、绕过封禁、重设推流码或恢复已经结束的视频。不要将 state/token 文件或推流码公开。
 

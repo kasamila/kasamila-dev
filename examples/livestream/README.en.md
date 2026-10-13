@@ -49,7 +49,7 @@ Official protocols: [YouTube streamList](https://developers.google.com/youtube/v
 
 ## YouTube continuation
 
-`YOUTUBE_FOLLOW=true` follows broadcasts on the same reusable ingest stream. Opt in with `YOUTUBE_AUTO_CONTINUE=true` (default false) to create a successor only while the OBS browser source is connected, the old broadcast is complete and ingest is active. The successor preserves title/privacy, enables auto-start, disables auto-stop and binds the same stream key. Enable OBS automatic reconnect. Video changes do not require OAuth again; revoked/expired refresh credentials still do.
+`YOUTUBE_FOLLOW=true` follows broadcasts on the same reusable ingest stream. Opt in with `YOUTUBE_AUTO_CONTINUE=true` (default false) to create a successor only while the OBS browser source is connected, the old broadcast is complete and ingest is active. The successor preserves title/privacy and binds the same stream key. YouTube auto-start/stop are disabled; the sample automatically transitions its ready successor to live after confirming active ingest, including when OBS never disconnected. Enable OBS automatic reconnect. Video changes do not require OAuth again; revoked/expired refresh credentials still do.
 
 Persist `YOUTUBE_STATE_FILE` (default youtube-state.json) and exclude it from version control. Creation intent is recorded before insertion. Ambiguous results are reconciled without duplicate insertion; inspect YouTube Studio for unresolved outcomes. Run one process only. This cannot restart OBS, repair networking, bypass platform restrictions, reset keys or revive completed broadcasts. Keep state/token files and stream keys private.
 

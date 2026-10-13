@@ -56,8 +56,8 @@ class YouTubeContinuity:
         self.owned(row)
         if self.state.get('video') != row['id']:
             await self.store(video=row['id'], phase='watching', pending=None, marker=None)
-        # Auto-start can wait for a *new* ingest edge even though OBS is already
-        # sending. Start only our own successor, never a manually scheduled show.
+        # Explicit start handles continuous ingest without waiting for OBS to
+        # reconnect. Start only our successor, never a manually scheduled show.
         if (self.room.get('youtube_auto_continue') and self.state.get('created_video') == row['id']
                 and row.get('status',{}).get('lifeCycleStatus') in ('ready','testing')
                 and time.time()-self.state.get('last_created',0) >= 60
@@ -133,7 +133,9 @@ class YouTubeContinuity:
               'status':{'privacyStatus':status['privacyStatus'],'selfDeclaredMadeForKids':False},
               'contentDetails':{k:v for k,v in previous.get('contentDetails',{}).items() if k in
                   ('enableDvr','enableEmbed','recordFromStart','enableClosedCaptions','availabilityConfig')}}
-        body['contentDetails'].update(enableAutoStart=True,enableAutoStop=False,monitorStream={'enableMonitorStream':False})
+        # YouTube's ingest-edge auto-start conflicts with explicit transition.
+        # Portal starts the successor after confirming the same ingest is active.
+        body['contentDetails'].update(enableAutoStart=False,enableAutoStop=False,monitorStream={'enableMonitorStream':False})
         await self.store(phase='creating',marker=marker,last_created=time.time(),privacy=status['privacyStatus'])
         created=await self.api('POST','liveBroadcasts',params={'part':'snippet,status,contentDetails'},json=body)
         await self.store(pending=created['id'],created_video=created['id'],phase='binding')
