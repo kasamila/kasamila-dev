@@ -7,6 +7,20 @@
 Public documentation, API/SDK upgrade notes and integration examples for [Kasamila](https://www.kasamila.com/portal).
 系统核心在私有仓库维护；本仓库不包含训练 Worker、后端业务代码、客户视频、几何模型或任何凭据。
 
+## API 地址与公共数字人 ID
+
+将 `KASAMILA_API_BASE` 设置为 `https://www.kasamila.com`。如果之前复制过直播样例的 `.env.example`，请同时更新已有的 `.env`。
+
+在后端使用 API Key 查询公共数字人：
+
+```bash
+curl --fail-with-body \
+  'https://www.kasamila.com/api/v1/runtime/catalog?visibility=public&limit=50' \
+  -H "Authorization: Bearer ${KASAMILA_API_KEY}"
+```
+
+从 `data.items[].avatar_id` 获取数字人 ID，从每项的 `templates[].template_code` 获取模板编号；通过 `data.next_cursor` 继续查询后续页面。公共数字人目录接口仍需 API Key，密钥仅保存在后端。详见[目录查询接入指南](docs/api_v1_runtime_integration_guide.md)。
+
 ## Start here / 从这里开始
 
 - [API / SDK quick start](docs/api_v1_runtime_integration_guide.md)

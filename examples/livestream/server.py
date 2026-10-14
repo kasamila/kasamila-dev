@@ -21,7 +21,7 @@ from host.runtime import sessions, finish_runtime
 load_dotenv()
 ROOT = Path(__file__).parent
 ORIGIN = os.getenv("DEMO_ORIGIN", "http://127.0.0.1:8877")
-API = os.getenv("KASAMILA_API_BASE", "https://api.kasamila.com").rstrip("/")
+API = os.getenv("KASAMILA_API_BASE", "https://www.kasamila.com").rstrip("/")
 TOKEN_FILE = Path(os.getenv("PLATFORM_TOKEN_FILE", "platform-token.json"))
 CONTINUITY_FILE = Path(os.getenv("YOUTUBE_STATE_FILE", "youtube-state.json"))
 hub = None

@@ -5,6 +5,20 @@
 Public API/SDK documentation, upgrade notes and runnable examples for [Kasamila](https://www.kasamila.com/portal).
 The system core remains private. This repository contains no training Worker, backend business code, customer media, geometry models or credentials.
 
+## API base URL and public avatar IDs
+
+Use `https://www.kasamila.com` as `KASAMILA_API_BASE`. If you copied an earlier livestream `.env.example`, update your existing `.env` too.
+
+Query public avatars from your backend with your API Key:
+
+```bash
+curl --fail-with-body \
+  'https://www.kasamila.com/api/v1/runtime/catalog?visibility=public&limit=50' \
+  -H "Authorization: Bearer ${KASAMILA_API_KEY}"
+```
+
+Read `data.items[].avatar_id` and each item's `templates[].template_code`. Follow `data.next_cursor` for additional pages. Public avatars still require an API Key for this API; keep the Key on your backend. See the [catalog integration guide](docs/api_v1_runtime_integration_guide.en.md).
+
 ## Documentation and releases
 
 - [API / SDK and MCP/Agent quick start](docs/api_v1_runtime_integration_guide.en.md)
