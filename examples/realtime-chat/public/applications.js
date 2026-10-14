@@ -1,8 +1,9 @@
 import {DemoVideo} from './demo-video.js?v=1';
+import {recoverableChatStart,chatFailurePhase,closeChatSocket} from './demo-chat-recovery.js?v=1';
 import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=2';
 import { companionText } from './companion-copy.js';
 import { language, localizedPortalUrl } from './i18n.js?v=20';
-import { demoText } from './demo-copy.js?v=6';
+import { demoText } from './demo-copy.js?v=7';
 import { drivePcm } from './examples/audio-bridge/bridge.mjs';
 const $=selector=>document.querySelector(selector);
 const chatPage=location.pathname.endsWith('/chat');
@@ -69,38 +70,53 @@ async function stopMic(){
  send({type:'audio_end'});$('#demo-mic').setAttribute('aria-pressed','false');$('#demo-mic').textContent=demoText('mic');
 }
 async function end(message=demoText('ended')){
- if(ending)return;ending=true;version++;ready=false;running=false;starting=false;clearTimeout(timeout);startup?.close();startup=null;media?.close();media=null;mediaReady=false;controls();
- await stopMic();const oldSocket=socket;socket=null;oldSocket?.close();stopAudio();
+ if(ending){version++;return;}ending=true;version++;ready=false;running=false;starting=false;clearTimeout(timeout);startup?.close();startup=null;media?.close();media=null;mediaReady=false;controls();
+ await stopMic();const oldSocket=socket;socket=null;const disconnected=closeChatSocket(oldSocket);stopAudio();
  const oldPlayer=player||pendingPlayer;player=pendingPlayer=null;const oldBootstrap=bootstrap;bootstrap=null;
  const oldContext=context;context=null;
- await disposeDemoAvatar(oldPlayer,oldBootstrap);try{await oldContext?.close();}catch{}
+ await Promise.all([disposeDemoAvatar(oldPlayer,oldBootstrap),disconnected]);try{await oldContext?.close();}catch{}
 
  const image=document.createElement('img');image.id='demo-poster';image.src=catalog.avatars.find(row=>row.id===$('#demo-avatar').value)?.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp';image.alt='';$('#demo-stage').replaceChildren(image);
  ending=false;status(message);controls();
 }
-async function start(){
+async function start(retried=false){
  if(starting||running||ending)return;starting=true;const attempt=++version;controls();status(demoText('connecting'));
+ let phase='session';
+ $('#demo-status').removeAttribute('data-failure-phase');
+ const fail=async error=>{
+  if(attempt!==version||ending)return;
+  const retry=starting&&!retried&&recoverableChatStart(error);
+  $('#demo-status').dataset.failurePhase=chatFailurePhase(phase);
+  const message=demoText(retry?'retryingConnection':error?.code||'failed');
+  await end(message);
+  if(retry&&version===attempt+1&&!running&&!starting&&!ending)void start(true);
+ };
  $('#demo-history').replaceChildren();muted=false;copy();
  const guard=startup=new DemoStartup($('#demo-end'),status,note=>{if(attempt===version)void end(note);});
+ if(retried){guard.status=text=>status(guard.phase==='preparing'?demoText('retryingConnection'):text);guard.lastStatus=null;guard.update();}
  try{
   context=new AudioContext();guard.bind(null,context);await context.resume();if(attempt!==version)return;
   // Consume late admission responses so cancellation can release an allocated runtime.
   const response=await fetch('/portal/apps/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({avatar:$('#demo-avatar').value,channel:$('#demo-channel').value,locale:language(),consent:$('#demo-consent').checked})});
-  const result=await response.json();if(!response.ok)throw new Error('Session unavailable');
+  const result=await response.json();if(!response.ok)throw Object.assign(new Error('Session unavailable'),{code:result.error?.code||'demo_unavailable'});
   if(attempt!==version){await releaseDemoRuntime(result);return;}
   bootstrap=result;
+  phase='avatar';
   const apiBase=result.api_base||location.origin;const {loadKasamila}=await import(new URL('/sdk/bootstrap/1/loader.mjs',apiBase).href);const Kasamila=await loadKasamila(result.runtime.sdk,apiBase);
   if(attempt!==version)return;
   const element=document.createElement('kasamila-avatar');pendingPlayer=element;guard.bind(element,context);$('#demo-stage').replaceChildren(element);
-  element.addEventListener('kasamila-error',()=>{if(attempt===version)void end(demoText('failed'));});
+  let initializing=true;
+  // create() rejects with the initialization error. Handling its event as well
+  // used to tear down the attempt before recovery could inspect the failure.
+  element.addEventListener('kasamila-error',event=>{if(!initializing&&attempt===version&&(player===element||pendingPlayer===element))void fail(event.detail||new Error('Avatar failed'));});
   const presentation=media=new DemoVideo($('#demo-stage'),catalog.avatars.find(row=>row.id===$('#demo-avatar').value)?.poster_url||'/web/portal/media/demo-portrait-friendly-v1.webp',{
    onState(available){if(attempt!==version||ending)return;mediaReady=available;if(running){if(!available)interrupt();ready=available;status(demoText(available?'connected':'videoBuffering'));controls();}},
    onFailure(note){if(attempt===version)void end(note);}
   });
-  const created=await Kasamila.create({element,sessionToken:result.runtime.client_token,templateMedia:result.template_media,providerPreview:!result.template_media});
+  let created;try{created=await Kasamila.create({element,sessionToken:result.runtime.client_token,templateMedia:result.template_media,providerPreview:!result.template_media});}finally{initializing=false;}
   if(attempt!==version){await disposeDemoAvatar(created,result);return;}player=created;pendingPlayer=null;
-  guard.video(presentation);await presentation.wait(created);if(attempt!==version)return;
-  guard.connecting();const ticket=await voiceTicket('/portal/apps/voice-ticket',result,guard.signal);if(attempt!==version)return;
+  phase='video';guard.video(presentation);await presentation.wait(created);if(attempt!==version)return;
+  phase='voice';guard.connecting();const ticket=await voiceTicket('/portal/apps/voice-ticket',result,guard.signal);if(attempt!==version)return;
   socket=new WebSocket(location.protocol==='https:'?'wss://'+location.host+'/portal/apps/socket':'ws://'+location.host+'/portal/apps/socket');
   const ws=socket;ws.onopen=()=>{if(attempt===version&&socket===ws)send({ticket});};
   socket.onmessage=event=>{
@@ -108,7 +124,7 @@ async function start(){
    try{
     const message=JSON.parse(event.data);
     if(message.type==='ready'){guard.complete();ready=mediaReady;running=true;starting=false;inputRate=message.input_rate;status(demoText(mediaReady?'connected':'videoBuffering'));controls();timeout=setTimeout(()=>void end(),result.duration*1000);}
-    else if(message.type==='error'){void end(demoText(message.code||'failed'));}
+    else if(message.type==='error'){void fail({code:message.code||'provider_error'});}
     else if(message.type==='interrupted'){stopAudio();}
     else if(message.type==='user_text'&&message.text){bubble('user',message.text);}
     else if(message.type==='text'&&message.delta){output=output||bubble('assistant');output.textContent+=message.delta;$('#demo-history').scrollTop=$('#demo-history').scrollHeight;}
@@ -119,12 +135,12 @@ async function start(){
     }else if(message.type==='done'){source?.close();source=null;output=null;}
    }catch{void end(demoText('failed'));}
   };
-  socket.onclose=()=>{if(attempt===version&&!ending&&(starting||running))void end(demoText(starting?'failed':'ended'));};socket.onerror=()=>{if(attempt===version)void end(demoText('failed'));};
- }catch{if(attempt===version)await end(demoText('failed'));}
+  socket.onclose=()=>{if(attempt===version&&!ending&&(starting||running)){if(starting)void fail({code:'demo_connection_failed'});else void end(demoText('ended'));}};socket.onerror=()=>{if(attempt===version)void fail({code:'demo_connection_failed'});};
+ }catch(error){await fail(error);}
 }
 $('#demo-avatar').addEventListener('change',renderChannels);$('#demo-consent').addEventListener('change',controls);
 $('#demo-channel').addEventListener('change',controls);
-$('#demo-start').addEventListener('click',start);$('#demo-end').addEventListener('click',()=>void end());$('#demo-interrupt').addEventListener('click',interrupt);
+$('#demo-start').addEventListener('click',()=>void start());$('#demo-end').addEventListener('click',()=>void end());$('#demo-interrupt').addEventListener('click',interrupt);
 $('#demo-mute').addEventListener('click',()=>{muted=!muted;stopAudio();$('#demo-mute').textContent=demoText(muted?'unmute':'mute');$('#demo-mute').setAttribute('aria-pressed',String(muted));});
 $('#demo-mic').addEventListener('click',async()=>{
  if(micStream)return stopMic();if(!ready)return;const attempt=version;let acquired;

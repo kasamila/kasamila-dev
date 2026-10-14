@@ -98,3 +98,15 @@ const videoRows={
  id:['Memuat video avatar…','Video sedang buffering. Obrolan dilanjutkan saat siap.','Ketuk untuk memutar video avatar','Browser menjeda video. Ketuk untuk memutarnya.','Video avatar tidak dapat diputar. Mulai ulang obrolan.'],
 };
 for(const [locale,row] of Object.entries(videoRows))videoKeys.forEach((key,index)=>demoCatalogs[locale][key]=row[index]);
+
+const retryConnection={
+ zh:'首次连接未完成，正在重新连接当前通道…',en:'The first connection did not complete. Reconnecting to this channel…',
+ fr:'La première connexion a échoué. Reconnexion à ce canal…',de:'Die erste Verbindung wurde nicht hergestellt. Dieser Kanal wird erneut verbunden…',
+ ru:'Первое подключение не завершено. Повторное подключение к этому каналу…',es:'La primera conexión no se completó. Reconectando este canal…',
+ it:'La prima connessione non è riuscita. Riconnessione a questo canale…',ar:'لم يكتمل الاتصال الأول. جارٍ إعادة الاتصال بهذه القناة…',
+ ja:'最初の接続が完了しませんでした。同じチャンネルに再接続しています…',ko:'첫 연결이 완료되지 않았습니다. 같은 채널에 다시 연결 중…',
+ th:'การเชื่อมต่อครั้งแรกไม่สำเร็จ กำลังเชื่อมต่อช่องนี้อีกครั้ง…',ms:'Sambungan pertama belum selesai. Menyambung semula saluran ini…',
+ vi:'Kết nối đầu tiên chưa hoàn tất. Đang kết nối lại kênh này…',hi:'पहला कनेक्शन पूरा नहीं हुआ। इसी चैनल से फिर जुड़ रहे हैं…',
+ id:'Koneksi pertama belum selesai. Menghubungkan kembali saluran ini…'
+};
+for(const [locale,text] of Object.entries(retryConnection))demoCatalogs[locale].retryingConnection=text;
