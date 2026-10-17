@@ -1,4 +1,4 @@
-import {language} from './i18n.js?v=20';
+import {language} from './i18n.js?v=20261017';
 const keys=['title','intro','store','country','search','buy','variants','quantity','details','policies','merchant','authorize','more','stock','out','checked','checkout','note','empty','loading','ready'];
 const rows={
 zh:['Shopify实时店员','和数字人店员聊需求，发现适合你的商品。商品、价格与店铺政策直接来自已授权的 Shopify 商店。','商店','配送国家 / 地区','搜索商品','前往 Shopify 购买','商品规格','数量','商品详情','店铺政策','我是店铺管理者','授权商店','加载更多','可购买','暂不可购买','数据核验时间','正在创建 Shopify 购物车…','运费、税费、优惠与最终可售性以 Shopify 结账为准。可更换国家后重新咨询。','暂无已授权并发布的商店。店主管理者可在 Admin 完成配置和授权。','正在读取商店…','商品已同步，可以开始咨询'],

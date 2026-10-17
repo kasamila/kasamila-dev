@@ -1,4 +1,4 @@
-import {language} from './i18n.js?v=20';
+import {language} from './i18n.js?v=20261017';
 const keys=['title','intro','consent','waiting','active','download','install','limit','start'];
 const rows={
 zh:['Kasamila 语音伴侣','让网页的声音，拥有数字人的表情。选择一个有声音的标签页，与你的数字人一起聆听。','我同意将所选标签页的声音用于 Kasamila 数字人驱动。它可能包含提示音、音乐和私人对话。此演示不保存音频，也不读取网页文字。','在目标网页点击 Kasamila 扩展图标，选择声音来源。','已连接 · 等待网页声音','下载浏览器扩展','解压下载文件 → 打开 chrome://extensions 或 edge://extensions → 开启开发者模式 → 加载已解压的扩展程序，选择 extension 文件夹。','桌面 Chrome / Edge 116+。受保护内容、浏览器内部页面和部分音频来源可能不可用。会话到时后需手动重连。','启用数字人'],
@@ -19,3 +19,22 @@ id:['Pendamping Suara Kasamila','Berikan ekspresi manusia pada audio web. Pilih 
 };
 export const companionCatalogs=Object.fromEntries(Object.entries(rows).map(([lang,row])=>[lang,Object.fromEntries(keys.map((key,index)=>[key,row[index]]))]));
 export function companionText(key,locale=language()){return (companionCatalogs[locale]||companionCatalogs.en)[key]||key;}
+
+const activationRows={
+ zh:['点击继续连接','浏览器暂停了数字人音频，请点击继续连接。无需重新选择数字人。'],
+ en:['Continue connection','The browser paused avatar audio. Click to continue; your avatar selection is saved.'],
+ fr:['Continuer la connexion','Le navigateur a suspendu le son de l’avatar. Cliquez pour continuer ; votre choix est conservé.'],
+ de:['Verbindung fortsetzen','Der Browser hat das Avatar-Audio pausiert. Klicken Sie zum Fortfahren; die Auswahl bleibt gespeichert.'],
+ ru:['Продолжить подключение','Браузер приостановил звук аватара. Нажмите, чтобы продолжить; ваш выбор сохранён.'],
+ es:['Continuar conexión','El navegador pausó el audio del avatar. Pulsa para continuar; tu selección está guardada.'],
+ it:['Continua la connessione','Il browser ha sospeso l’audio dell’avatar. Premi per continuare; la selezione è salvata.'],
+ ar:['متابعة الاتصال','أوقف المتصفح صوت الشخصية مؤقتًا. اضغط للمتابعة؛ اختيار الشخصية محفوظ.'],
+ ja:['接続を続ける','ブラウザーがアバターの音声を一時停止しました。クリックして続行してください。選択は保存されています。'],
+ ko:['연결 계속','브라우저가 아바타 오디오를 일시 중지했습니다. 클릭하여 계속하세요. 선택한 아바타는 저장되어 있습니다.'],
+ th:['เชื่อมต่อต่อ','เบราว์เซอร์หยุดเสียงอวตารชั่วคราว คลิกเพื่อดำเนินการต่อ อวตารที่เลือกถูกบันทึกแล้ว'],
+ ms:['Teruskan sambungan','Pelayar menjeda audio avatar. Klik untuk meneruskan; pilihan avatar anda disimpan.'],
+ vi:['Tiếp tục kết nối','Trình duyệt đã tạm dừng âm thanh nhân vật. Nhấn để tiếp tục; lựa chọn của bạn đã được lưu.'],
+ hi:['कनेक्शन जारी रखें','ब्राउज़र ने अवतार का ऑडियो रोक दिया है। जारी रखने के लिए क्लिक करें; आपका चयन सहेजा गया है।'],
+ id:['Lanjutkan koneksi','Browser menjeda audio avatar. Klik untuk melanjutkan; pilihan avatar Anda tersimpan.'],
+};
+for(const [locale,row] of Object.entries(activationRows))Object.assign(companionCatalogs[locale],{activate:row[0],activationRequired:row[1]});

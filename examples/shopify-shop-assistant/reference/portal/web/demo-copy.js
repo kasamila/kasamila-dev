@@ -1,5 +1,5 @@
-import { language } from './i18n.js?v=20';
-import { shopText } from './shopify-copy.js?v=1';
+import { language } from './i18n.js?v=20261017';
+import { shopText } from './shopify-copy.js?v=20261017';
 const keys = ['heading','intro','available','chat','chatIntro','try','coming','liveIntro','commerce','commerceIntro','back','avatar','provider','consent','privacy','start','end','mic','interrupt','mute','input','send','note','unavailable','connecting','connected','failed','ended','micOff','unmute'];
 const rows = {
 zh:['应用展示','无需登录，在真实应用场景中体验 Kasamila。','可体验','实时数字人聊天','选择数字人和语音系统，用文字或声音开始对话，随时打断。','立即体验 →','即将推出','观看数字人在直播间闲聊并回答观众问题。','直播卖货','体验产品介绍、互动问答与购物讲解。','← 所有应用','数字人','语音通道','我同意将本次文字与语音通过演示服务器传输给所选 AI 平台进行处理；演示不保存对话，请勿提供敏感信息。','隐私政策','开始聊天','结束聊天','开启麦克风','打断','关闭声音','输入消息','发送','AI 回复仅作应用展示。会话到时自动结束；语音识别、语言和音色能力取决于所选平台。','暂无可用演示，请稍后再试。','正在连接…','已连接','连接失败，请重试或选择其他通道。','会话已结束','关闭麦克风','开启声音'],
@@ -98,3 +98,15 @@ const videoRows={
  id:['Memuat video avatar…','Video sedang buffering. Obrolan dilanjutkan saat siap.','Ketuk untuk memutar video avatar','Browser menjeda video. Ketuk untuk memutarnya.','Video avatar tidak dapat diputar. Mulai ulang obrolan.'],
 };
 for(const [locale,row] of Object.entries(videoRows))videoKeys.forEach((key,index)=>demoCatalogs[locale][key]=row[index]);
+
+const retryConnection={
+ zh:'首次连接未完成，正在重新连接当前通道…',en:'The first connection did not complete. Reconnecting to this channel…',
+ fr:'La première connexion a échoué. Reconnexion à ce canal…',de:'Die erste Verbindung wurde nicht hergestellt. Dieser Kanal wird erneut verbunden…',
+ ru:'Первое подключение не завершено. Повторное подключение к этому каналу…',es:'La primera conexión no se completó. Reconectando este canal…',
+ it:'La prima connessione non è riuscita. Riconnessione a questo canale…',ar:'لم يكتمل الاتصال الأول. جارٍ إعادة الاتصال بهذه القناة…',
+ ja:'最初の接続が完了しませんでした。同じチャンネルに再接続しています…',ko:'첫 연결이 완료되지 않았습니다. 같은 채널에 다시 연결 중…',
+ th:'การเชื่อมต่อครั้งแรกไม่สำเร็จ กำลังเชื่อมต่อช่องนี้อีกครั้ง…',ms:'Sambungan pertama belum selesai. Menyambung semula saluran ini…',
+ vi:'Kết nối đầu tiên chưa hoàn tất. Đang kết nối lại kênh này…',hi:'पहला कनेक्शन पूरा नहीं हुआ। इसी चैनल से फिर जुड़ रहे हैं…',
+ id:'Koneksi pertama belum selesai. Menghubungkan kembali saluran ini…'
+};
+for(const [locale,text] of Object.entries(retryConnection))demoCatalogs[locale].retryingConnection=text;

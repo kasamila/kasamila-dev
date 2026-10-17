@@ -995,7 +995,7 @@ export function publicDeveloperGuideUrl(name, locale = currentLanguage) {
 }
 export function localizedPortalUrl(href, base, locale = currentLanguage) {
   const url = new URL(href, base);
-  if (url.origin !== new URL(base).origin || !/^\/portal(?:\/|$)/.test(url.pathname)) return href;
+  if (url.origin !== new URL(base).origin || !/^\/(?:portal|experience|developers|partners|pricing|workspace)(?:\/|$)/.test(url.pathname)) return href;
   if (!Object.hasOwn(catalogs, locale)) return href;
   url.searchParams.set("lang", locale);
   return url.pathname + url.search + url.hash;
@@ -1116,6 +1116,15 @@ for (const [locale, value] of Object.entries(templateVideoGuidance)) {
 
 const applicationLabels = {zh:"应用展示",en:"Application demos",fr:"Démonstrations",de:"Anwendungsdemos",ru:"Демонстрации",es:"Demostraciones",it:"Dimostrazioni",ar:"عروض التطبيقات",ja:"アプリケーションデモ",ko:"애플리케이션 데모",th:"แอปสาธิต",ms:"Demo aplikasi",vi:"Ứng dụng trình diễn",hi:"ऐप डेमो",id:"Demo aplikasi"};
 for (const [locale, value] of Object.entries(applicationLabels)) { common[locale]["nav.applications"] = value; catalogs[locale]["nav.applications"] = value; }
+
+const siteV2Labels = {"zh": ["体验", "开发", "合作", "工作", "接入", "核对", "账户", "跳到内容"], "en": ["Experience", "Developers", "Partners", "Work", "Integrate", "Review", "Account", "Skip to content"], "fr": ["Découvrir", "Développer", "Partenaires", "Travail", "Intégration", "Suivi", "Compte", "Aller au contenu"], "de": ["Erleben", "Entwickler", "Partner", "Arbeit", "Integration", "Prüfen", "Konto", "Zum Inhalt"], "ru": ["Демо", "Разработчикам", "Партнёрам", "Работа", "Интеграция", "Контроль", "Аккаунт", "К содержимому"], "es": ["Experiencia", "Desarrollo", "Colaboración", "Trabajo", "Integración", "Revisión", "Cuenta", "Ir al contenido"], "it": ["Esperienza", "Sviluppatori", "Partner", "Lavoro", "Integrazione", "Verifica", "Account", "Vai al contenuto"], "ar": ["التجربة", "المطورون", "الشركاء", "العمل", "التكامل", "المراجعة", "الحساب", "انتقل إلى المحتوى"], "ja": ["体験", "開発", "パートナー", "作業", "連携", "確認", "アカウント", "本文へ移動"], "ko": ["체험", "개발", "파트너", "작업", "통합", "확인", "계정", "콘텐츠로 이동"], "th": ["ทดลอง", "นักพัฒนา", "พันธมิตร", "งาน", "เชื่อมต่อ", "ตรวจสอบ", "บัญชี", "ข้ามไปเนื้อหา"], "ms": ["Pengalaman", "Pembangun", "Rakan kongsi", "Kerja", "Integrasi", "Semakan", "Akaun", "Langkau ke kandungan"], "vi": ["Trải nghiệm", "Phát triển", "Đối tác", "Công việc", "Tích hợp", "Đối soát", "Tài khoản", "Đến nội dung"], "hi": ["अनुभव", "डेवलपर", "साझेदार", "कार्य", "एकीकरण", "समीक्षा", "खाता", "सामग्री पर जाएँ"], "id": ["Pengalaman", "Pengembang", "Mitra", "Kerja", "Integrasi", "Tinjau", "Akun", "Lewati ke konten"]};
+for (const [locale, values] of Object.entries(siteV2Labels)) {
+ const names=["nav.experience","nav.develop","nav.partners","workspace.group.work","workspace.group.integrate","workspace.group.review","workspace.group.account","a11y.skipContent"];
+ const labels=Object.fromEntries(names.map((key,i)=>[key,values[i]]));Object.assign(common[locale],labels);Object.assign(catalogs[locale],labels);
+}
+
+const returnContextCopy={"zh": "登录返回上下文已过期，已安全返回总览。请重新选择要配置的功能。", "en": "Your return context expired. The overview is ready; choose what to configure again.", "fr": "Le contexte de retour a expiré. Choisissez à nouveau une configuration depuis la vue d’ensemble.", "de": "Der Rückkehrkontext ist abgelaufen. Wählen Sie in der Übersicht erneut die Konfiguration.", "ru": "Контекст возврата истёк. Выберите нужную настройку в обзоре.", "es": "El contexto de regreso caducó. Vuelve a elegir qué configurar desde la vista general.", "it": "Il contesto di ritorno è scaduto. Scegli di nuovo la configurazione dalla panoramica.", "ar": "انتهت صلاحية سياق العودة. اختر الإعداد المطلوب مجددًا من النظرة العامة.", "ja": "ログイン後の戻り先情報が期限切れです。概要から設定する機能を選び直してください。", "ko": "돌아갈 위치 정보가 만료되었습니다. 개요에서 설정할 기능을 다시 선택하세요.", "th": "ข้อมูลกลับหลังเข้าสู่ระบบหมดอายุแล้ว โปรดเลือกสิ่งที่จะตั้งค่าอีกครั้งจากภาพรวม", "ms": "Konteks kembali telah tamat tempoh. Pilih semula konfigurasi daripada gambaran keseluruhan.", "vi": "Ngữ cảnh quay lại đã hết hạn. Hãy chọn lại mục cần cấu hình từ tổng quan.", "hi": "वापसी संदर्भ की अवधि समाप्त हो गई है। अवलोकन से कॉन्फ़िगरेशन फिर चुनें।", "id": "Konteks kembali kedaluwarsa. Pilih lagi konfigurasi dari ringkasan."};
+for(const [locale,value] of Object.entries(returnContextCopy)){common[locale]["workspace.returnExpired"]=value;catalogs[locale]["workspace.returnExpired"]=value;}
 
 export function initI18n() {
   document.querySelectorAll(".language-control select").forEach((select) => {

@@ -1,8 +1,8 @@
-import {DemoVideo} from './demo-video.js?v=1';
-import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=2';
-import {language,localizedPortalUrl} from './i18n.js?v=20';
-import {demoText} from './demo-copy.js?v=6';
-import {shopText as t} from './shopify-copy.js?v=6';
+import {DemoVideo} from './demo-video.js?v=20261017';
+import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=20261017';
+import {language,localizedPortalUrl} from './i18n.js?v=20261017';
+import {demoText} from './demo-copy.js?v=20261017';
+import {shopText as t} from './shopify-copy.js?v=20261017';
 import {drivePcm} from './examples/audio-bridge/bridge.mjs';
 const $=s=>document.querySelector(s),params=new URLSearchParams(location.search),embedded=location.pathname.endsWith('/embed');
 document.body.classList.toggle('shop-embed',embedded);

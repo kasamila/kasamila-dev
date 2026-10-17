@@ -1,4 +1,4 @@
-import {demoText} from './demo-copy.js?v=6';
+import {demoText} from './demo-copy.js?v=20261017';
 
 // Portal presentation/admission only. Do not alter the SDK renderer, its frame
 // callbacks, geometry timeline, or the media URL selected by the Runtime.

@@ -1,4 +1,4 @@
-import {demoText} from './demo-copy.js?v=6';
+import {demoText} from './demo-copy.js?v=20261017';
 
 // Own the entire startup deadline, including fetch/import/model/audio waits.
 // Keep the audio recovery control after startup for mobile foreground resumes.

@@ -1,9 +1,9 @@
-import {DemoVideo} from './demo-video.js?v=1';
+import {DemoVideo} from './demo-video.js?v=20261017';
 import {recoverableChatStart,chatFailurePhase,closeChatSocket} from './demo-chat-recovery.js?v=1';
-import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=2';
-import { companionText } from './companion-copy.js';
-import { language, localizedPortalUrl } from './i18n.js?v=20';
-import { demoText } from './demo-copy.js?v=7';
+import {DemoStartup,disposeDemoAvatar,releaseDemoRuntime,voiceTicket} from './demo-startup.js?v=20261017';
+import { companionText } from './companion-copy.js?v=20261017';
+import { language, localizedPortalUrl } from './i18n.js?v=20261017';
+import { demoText } from './demo-copy.js?v=20261017';
 import { drivePcm } from './examples/audio-bridge/bridge.mjs';
 const $=selector=>document.querySelector(selector);
 const chatPage=location.pathname.endsWith('/chat');
