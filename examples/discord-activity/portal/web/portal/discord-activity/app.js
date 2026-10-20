@@ -1,5 +1,5 @@
 import {DiscordSDK,patchUrlMappings} from './discord-sdk.js?v=1';
-import {drivePcm} from '/web/portal/examples/audio-bridge/bridge.mjs';
+import {createRuntimeFrame} from './stage-frame.js?v=1';
 import {disposeDemoAvatar} from '/web/portal/demo-startup.js?v=20261017';
 import {installRuntimeNetwork} from './runtime-network.js?v=1';
 const $=id=>document.getElementById(id),base='/portal/apps/discord';
@@ -11,11 +11,11 @@ const t=key=>(locale==='zh'?zh:en)[key]||en[key]||key;
 function translate(){document.documentElement.lang=locale;for(const node of document.querySelectorAll('[data-copy]'))node.textContent=t(node.dataset.copy);$('retry-auth').textContent=locale==='zh'?'重新验证 Discord 连接':'Retry Discord connection';}
 $('locale').onchange=()=>{locale=$('locale').value;translate();};translate();
 let sdk,config,session,me,player,source,socket,admission,heartbeat,expiry,starting=false,version=0,currentAvatar='',ownAvatar='',owner=false,frames=0,clockOffset=0,frameAt=0;
-let connectNetwork;
+let connectNetwork,runtimeFrame;
 function message(key,extra=''){$('status').textContent=t(key)+extra;}
 async function api(path,body){const response=await fetch(base+path,{cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});const data=await response.json();if(!response.ok)throw new Error(data.error?.code||data.detail?.[0]?.msg||'discord_request_failed');return data;}
 function controls(){$('connect').disabled=!session||starting||!!player||!$('consent').checked;$('present').disabled=!player||owner;$('stop').disabled=!owner;$('disconnect').disabled=!player&&!starting;$('avatar').disabled=!!player||starting;}
-async function end(){version++;starting=false;owner=false;clearInterval(heartbeat);clearTimeout(expiry);socket?.close();socket=null;source?.abort();source=null;const previous=player;player=null;await disposeDemoAvatar(previous,admission);admission=null;$('stage').replaceChildren();$('runtime').textContent='—';controls();}
+async function end(){version++;starting=false;owner=false;clearInterval(heartbeat);clearTimeout(expiry);socket?.close();socket=null;source?.abort();source=null;const previous=player,previousFrame=runtimeFrame;player=null;runtimeFrame=null;await disposeDemoAvatar(previous,admission);previousFrame?.remove();admission=null;$('stage').replaceChildren();$('runtime').textContent='—';controls();}
 function showError(error){const hints={discord_join_voice_first:locale==='zh'?'请先加入服务器内带扬声器图标的“常规”语音频道，然后点击“重新验证 Discord 连接”。':'Join the configured voice channel (speaker icon), then retry the Discord connection.',discord_instance_denied:locale==='zh'?'未能验证当前 Activity 成员身份，请从测试服务器重新打开 Kasamila。':'The Activity membership could not be verified. Reopen Kasamila from the test server.'};message('failed',hints[error.message]||error.message);$('evidence').textContent=error.message;}
 async function connect(override){
   if(starting)return;starting=true;controls();const run=++version;
@@ -25,18 +25,14 @@ async function connect(override){
     currentAvatar=override||state.presenter?.avatar||$('avatar').value;ownAvatar=$('avatar').value;
     message('loading');await connectNetwork(session);result=await api('/runtime',{session,avatar:currentAvatar,consent:$('consent').checked});
     if(run!==version){await disposeDemoAvatar(null,result);return;}admission=result;
-    const {loadKasamila}=await import('/sdk/bootstrap/1/loader.mjs');
-    const descriptor={...admission.runtime.sdk,loader_url:new URL(admission.runtime.sdk.loader_url,location.origin).pathname};
-    const Kasamila=await loadKasamila(descriptor,location.origin);
-    if(run!==version){await disposeDemoAvatar(null,result);return;}
-    const element=document.createElement('kasamila-avatar');player=element;$('stage').replaceChildren(element);
-    element.addEventListener('kasamila-error',event=>{$('evidence').textContent=String(event.detail?.message||'runtime_error');});
-    const creating=Kasamila.create({element,sessionToken:result.runtime.client_token,providerPreview:true});
-    creating.then(created=>{if(run!==version)void disposeDemoAvatar(created,result);}).catch(()=>{});
+    const host=createRuntimeFrame($('stage'));runtimeFrame=host.frame;
+    const creating=host.create(result,session);
+    creating.then(created=>{if(run!==version){created.source.abort();void disposeDemoAvatar(created.player,result);}}).catch(()=>{});
     let timeout;
     const created=await Promise.race([creating,new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('discord_runtime_timeout')),180000);})]).finally(()=>clearTimeout(timeout));
-    if(run!==version){await disposeDemoAvatar(created,result);return;}player=created;
-    source=drivePcm(player,{sampleRate:16000,maxQueuedMs:400,playback:false});source.finished.catch(error=>{if(run===version){void end();showError(error);}});
+    if(run!==version){created.source.abort();await disposeDemoAvatar(created.player,result);return;}player=created.player;source=created.source;
+    player.addEventListener('kasamila-error',event=>{$('evidence').textContent=String(event.detail?.message||'runtime_error');});
+    source.finished.catch(error=>{if(run===version){void end();showError(error);}});
     const url=new URL(base+'/socket',location.href);url.protocol='wss:';socket=new WebSocket(url);socket.binaryType='arraybuffer';
     socket.onopen=()=>{socket.send(JSON.stringify({ticket:admission.ticket}));heartbeat=setInterval(()=>{if(socket?.readyState===1)socket.send(JSON.stringify({type:'ping',time:Date.now()}));},5000);};
     socket.onmessage=event=>{

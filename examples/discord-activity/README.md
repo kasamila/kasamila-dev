@@ -25,6 +25,14 @@ that native Discord audio and inferred lip motion are already synchronized.
   `/portal/apps/discord/runtime-proxy/` prefix to forward to
   `http://127.0.0.1:8791/runtime/`; keep the bridge port private.
 
+- `runtime-stage.html` / `runtime-stage.js`: same-origin renderer child of the
+  Activity. The existing PCM player accesses its parent; rendering directly in
+  the Activity would access Discord's cross-origin parent and be blocked. Only
+  the outer Activity performs Discord RPC. PCM streams are created in the
+  renderer's realm and incoming samples are converted to its local Int16Array.
+  Runtime tokens are passed in memory, never in iframe URLs. No SDK source is
+  rewritten and no browser origin checks are disabled.
+
 ## Configure the hosted validation
 
 Open `https://kasamila.com/api/v1/admin/portal/discord/manage` as a superadmin.
@@ -112,6 +120,12 @@ Automated tests cover credentials, request admission, signed claims and PCM
 conversion. They **do not** establish real Discord microphone/Activity/DAVE/
 mobile interoperability. Test with two real Discord accounts, mute/unmute,
 leave/rejoin, 10-minute expiry and a restrictive mobile network before promotion.
+
+In the main Portal repository, `node scripts/test_portal_discord_frame.cjs`
+(with Playwright installed, or `KASAMILA_PLAYWRIGHT_MODULE` set) reproduces the
+cross-origin parent failure and verifies the nested stage with the unchanged PCM
+player and a real AudioWorklet. Discord RPC and inference are fixtures; the test
+does not establish real Discord voice synchronization.
 
 ## Platform references
 
