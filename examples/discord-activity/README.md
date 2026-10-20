@@ -89,6 +89,14 @@ are cleaned up server-side on disconnect, as well as client-side on cancellation
 The bot disconnects when no viewers remain. A viewer Runtime is billed separately;
 both the demo's existing Runtime concurrency cap and this app's viewer cap apply.
 
+Reconnecting checks the signed Activity session's expiry and silently repeats
+Discord authorization when needed, reserving the renderer startup deadline.
+A server-side expiry during state/Runtime admission triggers one authorization
+refresh and one retry. Repeated expiry or failed membership validation stops
+admission and exposes the retry control; it never extends a signed claim in the
+browser. Avatar selection and consent remain in place. Active stages still end
+at their configured expiry; this does not create background Runtime sessions.
+
 The Activity keeps Discord's original channel audio and sets Runtime PCM playback
 to **false**. The relay timestamp measures bot-to-browser transport time only,
 not Discord's native-audio latency or actual lip-render delay. Default channel
@@ -126,6 +134,9 @@ In the main Portal repository, `node scripts/test_portal_discord_frame.cjs`
 cross-origin parent failure and verifies the nested stage with the unchanged PCM
 player and a real AudioWorklet. Discord RPC and inference are fixtures; the test
 does not establish real Discord voice synchronization.
+
+`node scripts/test_portal_discord_reconnect.cjs` covers reconnect after expiry,
+bounded state/Runtime retries, denied membership and cancellation during renewal.
 
 ## Platform references
 

@@ -11,19 +11,47 @@ const t=key=>(locale==='zh'?zh:en)[key]||en[key]||key;
 function translate(){document.documentElement.lang=locale;for(const node of document.querySelectorAll('[data-copy]'))node.textContent=t(node.dataset.copy);$('retry-auth').textContent=locale==='zh'?'重新验证 Discord 连接':'Retry Discord connection';}
 $('locale').onchange=()=>{locale=$('locale').value;translate();};translate();
 let sdk,config,session,me,player,source,socket,admission,heartbeat,expiry,starting=false,version=0,currentAvatar='',ownAvatar='',owner=false,frames=0,clockOffset=0,frameAt=0;
-let connectNetwork,runtimeFrame;
+let connectNetwork,runtimeFrame,authPending,sessionExpires=0;
 function message(key,extra=''){$('status').textContent=t(key)+extra;}
 async function api(path,body){const response=await fetch(base+path,{cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});const data=await response.json();if(!response.ok)throw new Error(data.error?.code||data.detail?.[0]?.msg||'discord_request_failed');return data;}
-function controls(){$('connect').disabled=!session||starting||!!player||!$('consent').checked;$('present').disabled=!player||owner;$('stop').disabled=!owner;$('disconnect').disabled=!player&&!starting;$('avatar').disabled=!!player||starting;}
+function controls(){$('connect').disabled=!session||!!authPending||starting||!!player||!$('consent').checked;$('present').disabled=!player||owner;$('stop').disabled=!owner;$('disconnect').disabled=!player&&!starting;$('avatar').disabled=!!player||starting;}
 async function end(){version++;starting=false;owner=false;clearInterval(heartbeat);clearTimeout(expiry);socket?.close();socket=null;source?.abort();source=null;const previous=player,previousFrame=runtimeFrame;player=null;runtimeFrame=null;await disposeDemoAvatar(previous,admission);previousFrame?.remove();admission=null;$('stage').replaceChildren();$('runtime').textContent='—';controls();}
-function showError(error){const hints={discord_join_voice_first:locale==='zh'?'请先加入服务器内带扬声器图标的“常规”语音频道，然后点击“重新验证 Discord 连接”。':'Join the configured voice channel (speaker icon), then retry the Discord connection.',discord_instance_denied:locale==='zh'?'未能验证当前 Activity 成员身份，请从测试服务器重新打开 Kasamila。':'The Activity membership could not be verified. Reopen Kasamila from the test server.'};message('failed',hints[error.message]||error.message);$('evidence').textContent=error.message;}
+function showError(error){const hints={discord_join_voice_first:locale==='zh'?'请先加入服务器内带扬声器图标的“常规”语音频道，然后点击“重新验证 Discord 连接”。':'Join the configured voice channel (speaker icon), then retry the Discord connection.',discord_instance_denied:locale==='zh'?'未能验证当前 Activity 成员身份，请从测试服务器重新打开 Kasamila。':'The Activity membership could not be verified. Reopen Kasamila from the test server.',discord_session_expired:locale==='zh'?'连接验证已过期，请点击“重新验证 Discord 连接”后重试。':'Connection verification expired. Retry the Discord connection, then reconnect.'};message('failed',hints[error.message]||error.message);$('evidence').textContent=error.message;}
+function clearSession(){session=null;sessionExpires=0;$('auth').textContent='—';$('retry-auth').hidden=false;}
+async function authenticateDiscord(){
+ if(authPending)return authPending;
+ $('status').textContent=locale==='zh'?'正在验证 Discord 连接…':'Verifying Discord connection…';
+ authPending=Promise.resolve().then(async()=>{
+  const {code}=await sdk.commands.authorize({client_id:config.application_id,response_type:'code',state:crypto.randomUUID(),prompt:'none',scope:['identify']});
+  const auth=await api('/auth',{code,instance_id:sdk.instanceId});
+  await sdk.commands.authenticate({access_token:auth.access_token});
+  session=auth.session;sessionExpires=Number(auth.expires)||0;me=auth.user;
+  $('auth').textContent=t('authOK');$('retry-auth').hidden=true;
+ });
+ controls();
+ try{await authPending;}catch(error){clearSession();throw error;}finally{authPending=null;controls();}
+}
+async function ensureSession(force=false){
+ // Reserve the full renderer startup deadline. Never lengthen a signed session
+ // in the browser: renew through Discord and the existing membership checks.
+ if(force||!session||sessionExpires-Date.now()<=180000)await authenticateDiscord();
+}
 async function connect(override){
   if(starting)return;starting=true;controls();const run=++version;
   let result;
   try{
-    const state=await api('/state',{session});
-    currentAvatar=override||state.presenter?.avatar||$('avatar').value;ownAvatar=$('avatar').value;
-    message('loading');await connectNetwork(session);result=await api('/runtime',{session,avatar:currentAvatar,consent:$('consent').checked});
+    await ensureSession();if(run!==version)return;
+    for(let attempt=0;;attempt++){
+     try{
+      const state=await api('/state',{session});if(run!==version)return;
+      currentAvatar=override||state.presenter?.avatar||$('avatar').value;ownAvatar=$('avatar').value;
+      message('loading');await connectNetwork(session);if(run!==version)return;
+      result=await api('/runtime',{session,avatar:currentAvatar,consent:$('consent').checked});break;
+     }catch(error){
+      if(error.message!=='discord_session_expired'||attempt!==0||run!==version)throw error;
+      clearSession();await ensureSession(true);if(run!==version)return;
+     }
+    }
     if(run!==version){await disposeDemoAvatar(null,result);return;}admission=result;
     const host=createRuntimeFrame($('stage'));runtimeFrame=host.frame;
     const creating=host.create(result,session);
@@ -59,7 +87,7 @@ async function connect(override){
     socket.onerror=()=>{if(run===version)showError(new Error('discord_socket_failed'));};
     expiry=setTimeout(()=>{if(run===version){void end();message('ended');}},admission.duration*1000);
     $('runtime').textContent='Ready';starting=false;controls();message('ready');
-  }catch(error){if(run===version){await end();showError(error);}}
+  }catch(error){if(run===version){if(error.message==='discord_session_expired')clearSession();await end();showError(error);}}
 }
 $('consent').onchange=controls;
 $('avatar').onchange=()=>{try{localStorage.setItem('kasamila-discord-avatar', $('avatar').value);}catch{}};
@@ -77,10 +105,7 @@ async function initialize(){
   if(!new URLSearchParams(location.search).has('frame_id')){message('outside');return;}
   if(!sdk){sdk=new DiscordSDK(config.application_id);patchUrlMappings([{prefix:'/kasamila',target:'kasamila.com'},{prefix:'/kasamila-www',target:'www.kasamila.com'}],{patchSrcAttributes:true});connectNetwork=installRuntimeNetwork(()=>session);}
   await Promise.race([sdk.ready(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('discord_handshake_timeout')),15000))]);
-  message('connecting');
-  const {code}=await sdk.commands.authorize({client_id:config.application_id,response_type:'code',state:crypto.randomUUID(),prompt:'none',scope:['identify']});
-  const auth=await api('/auth',{code,instance_id:sdk.instanceId});
-  await sdk.commands.authenticate({access_token:auth.access_token});session=auth.session;me=auth.user;$('auth').textContent=t('authOK');$('retry-auth').hidden=true;controls();message('ready');
+  await authenticateDiscord();message('ready');
 }
 function authFailed(error){showError(error);$('retry-auth').hidden=false;}
 $('retry-auth').onclick=async()=>{$('retry-auth').disabled=true;try{await initialize();}catch(error){authFailed(error);}finally{$('retry-auth').disabled=false;}};
