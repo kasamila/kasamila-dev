@@ -16,6 +16,15 @@ that native Discord audio and inferred lip motion are already synchronized.
   `web/portal/discord-activity/`. Runtime admission uses the existing published
   Kasamila session contract; API, SDK and geometry implementation are unchanged.
 
+- `runtime-proxy.mjs`: authenticated Portal-only forwarding for Discord's proxy,
+  whose same-origin GETs may omit Origin. Signed Activity claims supply the exact
+  application Origin; existing Runtime tokens and signed asset URLs remain
+  mandatory. Only fixed Runtime routes on the loopback API are reachable.
+  The Activity sets a short-lived, HttpOnly partitioned cookie for native video
+  requests and uses a session header for fetch. Configure nginx's
+  `/portal/apps/discord/runtime-proxy/` prefix to forward to
+  `http://127.0.0.1:8791/runtime/`; keep the bridge port private.
+
 ## Configure the hosted validation
 
 Open `https://kasamila.com/api/v1/admin/portal/discord/manage` as a superadmin.

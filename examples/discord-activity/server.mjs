@@ -7,6 +7,7 @@ import {joinVoiceChannel, entersState, VoiceConnectionStatus, EndBehaviorType} f
 import prism from 'prism-media';
 import {WebSocketServer, WebSocket} from 'ws';
 import {signSession, verifySession, assertInstance, assertVoicePresence, mono16k, pcmPacket} from './protocol.mjs';
+import {runtimeProxy} from './runtime-proxy.mjs';
 
 const portal = process.env.KASAMILA_DISCORD_PORTAL || 'http://127.0.0.1:8000';
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(portal)) throw new Error('Use a loopback Portal origin');
@@ -99,7 +100,9 @@ async function refresh(){
   finally {changing=false;broadcast();}
 }
 async function body(req){let text='';for await(const chunk of req){text+=chunk;if(text.length>8192)throw failure('discord_request_too_large',413);}return JSON.parse(text||'{}');}
+const forwardRuntime=runtimeProxy({secret,configuration:()=>config});
 const server=http.createServer(async(req,res)=>{
+  if(req.url.startsWith('/runtime/')){await forwardRuntime(req,res);return;}
   res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
   if(!safeAuth(req)){res.writeHead(403);res.end('{"code":"forbidden"}');return;}
   try{
