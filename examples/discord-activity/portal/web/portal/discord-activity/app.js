@@ -7,14 +7,14 @@ const zh={connecting:'正在连接…',ready:'舞台已就绪。点击“用我�
 document.querySelectorAll('[data-copy]').forEach(node=>{zh[node.dataset.copy]=node.textContent;});
 let locale=navigator.language?.startsWith('zh')?'zh':'en';$('locale').value=locale;
 const t=key=>(locale==='zh'?zh:en)[key]||en[key]||key;
-function translate(){document.documentElement.lang=locale;for(const node of document.querySelectorAll('[data-copy]'))node.textContent=t(node.dataset.copy);}
+function translate(){document.documentElement.lang=locale;for(const node of document.querySelectorAll('[data-copy]'))node.textContent=t(node.dataset.copy);$('retry-auth').textContent=locale==='zh'?'重新验证 Discord 连接':'Retry Discord connection';}
 $('locale').onchange=()=>{locale=$('locale').value;translate();};translate();
 let sdk,config,session,me,player,source,socket,admission,heartbeat,expiry,starting=false,version=0,currentAvatar='',ownAvatar='',owner=false,frames=0,clockOffset=0,frameAt=0;
 function message(key,extra=''){$('status').textContent=t(key)+extra;}
 async function api(path,body){const response=await fetch(base+path,{cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});const data=await response.json();if(!response.ok)throw new Error(data.error?.code||data.detail?.[0]?.msg||'discord_request_failed');return data;}
 function controls(){$('connect').disabled=!session||starting||!!player||!$('consent').checked;$('present').disabled=!player||owner;$('stop').disabled=!owner;$('disconnect').disabled=!player&&!starting;$('avatar').disabled=!!player||starting;}
 async function end(){version++;starting=false;owner=false;clearInterval(heartbeat);clearTimeout(expiry);socket?.close();socket=null;source?.abort();source=null;const previous=player;player=null;await disposeDemoAvatar(previous,admission);admission=null;$('stage').replaceChildren();$('runtime').textContent='—';controls();}
-function showError(error){message('failed',error.message);$('evidence').textContent=error.message;}
+function showError(error){const hints={discord_join_voice_first:locale==='zh'?'请先加入服务器内带扬声器图标的“常规”语音频道，然后点击“重新验证 Discord 连接”。':'Join the configured voice channel (speaker icon), then retry the Discord connection.',discord_instance_denied:locale==='zh'?'未能验证当前 Activity 成员身份，请从测试服务器重新打开 Kasamila。':'The Activity membership could not be verified. Reopen Kasamila from the test server.'};message('failed',hints[error.message]||error.message);$('evidence').textContent=error.message;}
 async function connect(override){
   if(starting)return;starting=true;controls();const run=++version;
   let result;
@@ -73,15 +73,17 @@ setInterval(()=>{const ctx=player?.audioPlayer?.audioContext;$('sound').hidden=!
 window.addEventListener('pagehide',()=>{socket?.close();void end();});
 async function initialize(){
   config=await api('/config');
-  for(const avatar of config.avatars)$('avatar').append(new Option(avatar.names?.[locale]||avatar.name,avatar.id));
+  $('avatar').replaceChildren(...config.avatars.map(avatar=>new Option(avatar.names?.[locale]||avatar.name,avatar.id)));
   try{const saved=localStorage.getItem('kasamila-discord-avatar');if(config.avatars.some(a=>a.id===saved))$('avatar').value=saved;}catch{}
   if(!config.enabled){message('disabled');return;}
   if(!new URLSearchParams(location.search).has('frame_id')){message('outside');return;}
-  sdk=new DiscordSDK(config.application_id);await Promise.race([sdk.ready(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('discord_handshake_timeout')),15000))]);
-  patchUrlMappings([{prefix:'/kasamila',target:'kasamila.com'},{prefix:'/kasamila-www',target:'www.kasamila.com'}],{patchSrcAttributes:true});
+  if(!sdk){sdk=new DiscordSDK(config.application_id);patchUrlMappings([{prefix:'/kasamila',target:'kasamila.com'},{prefix:'/kasamila-www',target:'www.kasamila.com'}],{patchSrcAttributes:true});}
+  await Promise.race([sdk.ready(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('discord_handshake_timeout')),15000))]);
   message('connecting');
   const {code}=await sdk.commands.authorize({client_id:config.application_id,response_type:'code',state:crypto.randomUUID(),prompt:'none',scope:['identify']});
   const auth=await api('/auth',{code,instance_id:sdk.instanceId});
-  await sdk.commands.authenticate({access_token:auth.access_token});session=auth.session;me=auth.user;$('auth').textContent=t('authOK');controls();message('ready');
+  await sdk.commands.authenticate({access_token:auth.access_token});session=auth.session;me=auth.user;$('auth').textContent=t('authOK');$('retry-auth').hidden=true;controls();message('ready');
 }
-initialize().catch(showError);
+function authFailed(error){showError(error);$('retry-auth').hidden=false;}
+$('retry-auth').onclick=async()=>{$('retry-auth').disabled=true;try{await initialize();}catch(error){authFailed(error);}finally{$('retry-auth').disabled=false;}};
+initialize().catch(authFailed);

@@ -36,6 +36,13 @@ export function pcmPacket(pcm, sequence, timestamp = Date.now()) {
 
 export function assertInstance(instance, config, userId, instanceId) {
   if (instance.application_id !== config.application_id || instance.instance_id !== instanceId ||
-      instance.location?.guild_id !== config.guild_id || instance.location?.channel_id !== config.channel_id ||
+      instance.location?.kind !== 'gc' || instance.location.guild_id !== config.guild_id ||
+      typeof instance.location.channel_id !== 'string' || !instance.location.channel_id ||
       !instance.users?.includes(userId)) throw new Error('discord_instance_denied');
+}
+
+// An Activity may launch in a text channel while the member speaks in a voice channel.
+// Keep the configured audio source restriction independent of the Activity's location.
+export function assertVoicePresence(state, config, userId) {
+  if (state?.id !== userId || state.channelId !== config.channel_id) throw new Error('discord_join_voice_first');
 }

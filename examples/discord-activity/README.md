@@ -54,7 +54,9 @@ In the Discord Developer Portal:
    Click “Drive with my MIC”. A second test account joins the same Activity,
    accepts processing and connects to watch. The server independently verifies
    the OAuth user, live Activity instance, instance user membership, configured
-   guild/channel, and voice-channel presence. Client-provided user IDs are never
+   guild, and independently configured voice-channel presence. An Activity can be
+   launched from a text channel in the same server; its launch channel need not
+   equal the audio source channel. Client-provided user IDs are never
    accepted as identity.
 
 ## Audio, privacy and lifecycle

@@ -8,10 +8,10 @@
     <aside><h2 data-copy="setup">你的数字人</h2><label><span data-copy="avatar">数字人形象</span><select id="avatar"></select></label>
       <label class="consent"><input id="consent" type="checkbox"><span data-copy="consent">我同意在主动开启分身期间，Bot 接收并转发我的频道语音来驱动数字人；不保存录音。</span></label>
       <button id="connect" disabled data-copy="connect">连接舞台</button><button id="present" disabled data-copy="present">用我的 MIC 驱动</button><button id="stop" disabled data-copy="stop">停止我的分身</button><button id="disconnect" disabled class="secondary" data-copy="disconnect">离开舞台</button>
-      <p class="status" id="status" role="status" aria-live="polite"></p><button id="sound" hidden class="secondary" data-copy="sound">启用声音 / 恢复播放</button>
+      <p class="status" id="status" role="status" aria-live="polite"></p><button id="retry-auth" hidden class="secondary">重新验证 Discord 连接</button><button id="sound" hidden class="secondary" data-copy="sound">启用声音 / 恢复播放</button>
       <p class="note" data-copy="audioNote">默认保留 Discord 频道原声，舞台不重复播放音频。当前测试单个主播；观看者各使用一个 Runtime。</p>
     </aside>
   </section>
   <details open><summary data-copy="diagnostics">链路诊断</summary><div class="metrics"><div><small data-copy="auth">Discord 授权</small><strong id="auth">—</strong></div><div><small data-copy="voice">语音连接</small><strong id="voice">—</strong></div><div><small data-copy="frames">收到音频帧</small><strong id="frames">0</strong></div><div><small data-copy="delay">音频转发耗时（不含口型）</small><strong id="delay">—</strong></div><div><small>Runtime</small><strong id="runtime">—</strong></div><div><small data-copy="viewers">舞台人数</small><strong id="viewers">0</strong></div></div><p id="evidence"></p></details>
   <p class="note" data-copy="scope">仅处理主动开启分身的用户。停止、离开频道或会话到期后释放 Runtime。音画同步和移动端兼容性仍在实测。</p>
-</main><script type="module" src="/web/portal/discord-activity/app.js?v=1"></script></body></html>
+</main><script type="module" src="/web/portal/discord-activity/app.js?v=2"></script></body></html>

@@ -6,7 +6,7 @@ import {Client, GatewayIntentBits, PermissionFlagsBits, ChannelType} from 'disco
 import {joinVoiceChannel, entersState, VoiceConnectionStatus, EndBehaviorType} from '@discordjs/voice';
 import prism from 'prism-media';
 import {WebSocketServer, WebSocket} from 'ws';
-import {signSession, verifySession, assertInstance, mono16k, pcmPacket} from './protocol.mjs';
+import {signSession, verifySession, assertInstance, assertVoicePresence, mono16k, pcmPacket} from './protocol.mjs';
 
 const portal = process.env.KASAMILA_DISCORD_PORTAL || 'http://127.0.0.1:8000';
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(portal)) throw new Error('Use a loopback Portal origin');
@@ -34,7 +34,7 @@ async function checkInstance(identity) {
   const instance=await upstream('/applications/'+config.application_id+'/activity-instances/'+encodeURIComponent(identity.instance_id),'Bot '+config.bot_token);
   assertInstance(instance,config,identity.user_id,identity.instance_id);
   const member=client?.guilds.cache.get(config.guild_id)?.voiceStates.cache.get(identity.user_id);
-  if(member?.channelId!==config.channel_id)throw failure('discord_join_voice_first',403);
+  try {assertVoicePresence(member,config,identity.user_id);} catch {throw failure('discord_join_voice_first',403);}
   return identity;
 }
 async function identity(body) {
