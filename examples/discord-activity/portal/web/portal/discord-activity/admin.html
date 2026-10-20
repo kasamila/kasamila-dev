@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kasamila · Discord Activity Admin</title><link rel="stylesheet" href="/web/portal/discord-activity/style.css?v=1"></head><body><main>
+<header><a href="/api/v1/admin/portal/demos/manage" class="brand">KASAMILA <span>Admin</span></a><select id="locale" aria-label="Language"><option value="zh">中文</option><option value="en">English</option></select></header>
+<h1 data-copy="title">Discord 数字人分身 · 内嵌验证</h1><p data-copy="intro">独立的测试语音频道，单个主播、最多 8 位观看者。不需要 OBS、虚拟声卡或额外 LLM。</p>
+<p id="message" role="status" aria-live="polite"></p><form id="settings"><fieldset id="fields"><label class="consent"><input name="enabled" type="checkbox"><span data-copy="enabled">启用测试</span></label>
+<div class="metrics"><label>Application ID<input name="application_id" pattern="[0-9]{17,20}"></label><label>Client Secret<input name="client_secret" type="password" autocomplete="new-password"></label><label>Bot Token<input name="bot_token" type="password" autocomplete="new-password"></label><label>Server / Guild ID<input name="guild_id" pattern="[0-9]{17,20}"></label><label>Voice Channel ID<input name="channel_id" pattern="[0-9]{17,20}"></label><label><span data-copy="viewers">最大同时观看人数（含主播）</span><input name="max_viewers" type="number" min="1" max="8" value="4"></label></div>
+<div class="metrics"><label class="consent"><input name="clear_client_secret" type="checkbox"><span data-copy="clearSecret">清除 Client Secret</span></label><label class="consent"><input name="clear_bot_token" type="checkbox"><span data-copy="clearBot">清除 Bot Token</span></label></div>
+<p class="note" data-copy="secretNote">密钥留空保留已有值，使用现有 Admin 加密存储。数字人和 Runtime Key 复用“应用演示管理 → 语音伴侣”，独立配置允许的形象。</p>
+<h2 data-copy="avatars">允许的数字人</h2><div id="avatars"></div><button type="submit" data-copy="save">保存配置</button></fieldset></form>
+<details open><summary data-copy="setup">Discord Developer Portal 配置</summary><ol>
+<li data-copy="step1">Activities → Settings：启用 Activities。OAuth2 → Redirects 添加官方 Activity 示例使用的 https://127.0.0.1 占位地址。</li>
+<li data-copy="step2">Activities → URL Mappings 按下表配置，根路径 / 放最后，Target 不包含 https://，必须映射到目录。</li></ol>
+<table style="width:100%;overflow-wrap:anywhere;text-align:left"><thead><tr><th>Prefix</th><th>Target</th></tr></thead><tbody id="mappings"></tbody></table>
+<p data-copy="installNote">安装到测试服务器，Bot 只需要 View Channel、Connect；不需要 Administrator、Message Content 或读取其他频道。用开发者／测试账号在指定语音频道启动 Activity。</p><a id="install" target="_blank" rel="noopener noreferrer" data-copy="install">将 App 安装到测试服务器</a>
+<p data-copy="originNote">专用 Kasamila Runtime Key 的 Origin 白名单还需添加下列精确域名（不使用通配符）：</p><code id="origin"></code>
+<p class="note" data-copy="syncNote">当前采用频道原声，Activity 不重播声音。需要实测口型延迟；官方 SDK 未提供通用的单用户静音控制，暂不承诺自动音画同步。</p></details>
+<details open><summary data-copy="status">服务状态</summary><pre id="status"></pre></details>
+</main><script type="module" src="/web/portal/discord-activity/admin.js?v=1"></script></body></html>
